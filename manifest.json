@@ -1,0 +1,30 @@
+{
+  "name": "Gestor Proyectos SER",
+  "short_name": "Gestor SER",
+  "description": "Gestiona tus proyectos, hábitos y rituales SER",
+  "start_url": "/GestorSER/",
+  "scope": "/GestorSER/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#4B168E",
+  "background_color": "#F7F3FB",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
