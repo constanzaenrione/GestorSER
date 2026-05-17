@@ -916,8 +916,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Duración (horas) *</label>
-                    <input type="number" step="0.5" class="form-input" id="actividadDuracion" required>
+                    <label class="form-label">Duración *</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <input type="number" step="1" min="1" class="form-input" id="actividadDuracion" required style="flex:1;">
+                        <select class="form-select" id="actividadUnidad" style="width:90px;">
+                            <option value="h">h</option>
+                            <option value="min">min</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -934,6 +940,47 @@
                     <select class="form-select" id="actividadRitual">
                         <option value="">Sin ritual</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Limitación (en mis propias palabras)</label>
+                    <textarea class="form-textarea" id="actividadLimitacion" style="min-height:60px;"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Qué necesito para llevarla a cabo</label>
+                    <textarea class="form-textarea" id="actividadNecesito" style="min-height:60px;"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Subtareas</label>
+                    <div id="subtareasContainer" style="margin-bottom:0.5rem;"></div>
+                    <div id="formSubtarea" style="background:var(--lavender-light); padding:1rem; border-radius:8px; display:none; margin-bottom:0.5rem;">
+                        <input type="text" class="form-input" id="subtareaNombre" placeholder="Nombre de la subtarea" style="margin-bottom:0.75rem;">
+                        <div style="display:flex; gap:1.5rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+                            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.9rem;">
+                                <input type="radio" name="subtareaFecha" value="misma" checked onchange="toggleSubtareaFecha()"> Misma fecha
+                            </label>
+                            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.9rem;">
+                                <input type="radio" name="subtareaFecha" value="propia" onchange="toggleSubtareaFecha()"> Fecha propia
+                            </label>
+                        </div>
+                        <div id="subtareaFechaContainer" style="display:none; margin-bottom:0.75rem;">
+                            <input type="datetime-local" class="form-input" id="subtareaFechaInput">
+                        </div>
+                        <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem;">
+                            <input type="number" step="1" min="1" class="form-input" id="subtareaDuracion" placeholder="Duración" style="flex:1;">
+                            <select class="form-select" id="subtareaUnidad" style="width:90px;">
+                                <option value="min">min</option>
+                                <option value="h">h</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button type="button" class="btn btn-primary btn-small" onclick="confirmarSubtarea()">Agregar</button>
+                            <button type="button" class="btn btn-small" onclick="cancelarSubtarea()" style="background:#eee; color:#333;">Cancelar</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-small" id="btnAgregarSubtarea" onclick="mostrarFormSubtarea()">+ Subtarea</button>
                 </div>
 
                 <button type="submit" class="btn btn-primary">Guardar</button>
@@ -991,8 +1038,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Duración (minutos) *</label>
-                    <input type="number" class="form-input" id="habitoDuracion" required>
+                    <label class="form-label">Duración *</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <input type="number" step="1" min="1" class="form-input" id="habitoDuracion" required style="flex:1;">
+                        <select class="form-select" id="habitoUnidad" style="width:90px;">
+                            <option value="min">min</option>
+                            <option value="h">h</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -1168,6 +1221,77 @@
 
         let periodosDash = 14;
         let vistaHabitosActual = 'lista';
+        let subtareasTemp = [];
+
+        // HELPERS DE DURACIÓN
+        function duracionAHoras(duracion, unidad) {
+            return (unidad === 'min') ? duracion / 60 : (parseFloat(duracion) || 0);
+        }
+        function duracionTexto(duracion, unidad) {
+            const u = unidad || 'h';
+            if (u === 'h') return duracion + 'h';
+            if (duracion >= 60) {
+                const h = Math.floor(duracion / 60);
+                const m = duracion % 60;
+                return h + 'h' + (m > 0 ? ' ' + m + 'min' : '');
+            }
+            return duracion + 'min';
+        }
+
+        // SUBTAREAS
+        function mostrarFormSubtarea() {
+            document.getElementById('formSubtarea').style.display = 'block';
+            document.getElementById('btnAgregarSubtarea').style.display = 'none';
+            document.getElementById('subtareaNombre').value = '';
+            document.getElementById('subtareaFechaInput').value = '';
+            document.getElementById('subtareaDuracion').value = '';
+            document.getElementById('subtareaUnidad').value = 'min';
+            document.querySelector('input[name="subtareaFecha"][value="misma"]').checked = true;
+            document.getElementById('subtareaFechaContainer').style.display = 'none';
+        }
+        function cancelarSubtarea() {
+            document.getElementById('formSubtarea').style.display = 'none';
+            document.getElementById('btnAgregarSubtarea').style.display = 'inline-flex';
+        }
+        function toggleSubtareaFecha() {
+            const propia = document.querySelector('input[name="subtareaFecha"]:checked').value === 'propia';
+            document.getElementById('subtareaFechaContainer').style.display = propia ? 'block' : 'none';
+        }
+        function confirmarSubtarea() {
+            const nombre = document.getElementById('subtareaNombre').value.trim();
+            if (!nombre) return;
+            const fechaPropia = document.querySelector('input[name="subtareaFecha"]:checked').value === 'propia';
+            const fecha = fechaPropia ? document.getElementById('subtareaFechaInput').value : null;
+            const durVal = document.getElementById('subtareaDuracion').value;
+            const duracion = durVal ? parseFloat(durVal) : null;
+            const unidad = document.getElementById('subtareaUnidad').value;
+            subtareasTemp.push({ id: Date.now(), nombre, fechaPropia, fecha, duracion, unidad, completada: false });
+            renderizarSubtareasTemp();
+            cancelarSubtarea();
+        }
+        function eliminarSubtareaTemp(idx) {
+            subtareasTemp.splice(idx, 1);
+            renderizarSubtareasTemp();
+        }
+        function renderizarSubtareasTemp() {
+            const c = document.getElementById('subtareasContainer');
+            if (!c) return;
+            c.innerHTML = subtareasTemp.map((s, i) => `
+                <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem; background:white; border-radius:6px; margin-bottom:0.25rem;">
+                    <span style="flex:1; font-size:0.9rem;">${s.nombre}${s.duracion ? ` <small style="color:var(--purple);">· ${duracionTexto(s.duracion, s.unidad||'min')}</small>` : ''}${s.fechaPropia && s.fecha ? ` <small style="color:#666;">(${new Date(s.fecha).toLocaleDateString('es-CL')})</small>` : ' <small style="color:#888;">(misma fecha)</small>'}</span>
+                    <button type="button" class="btn btn-delete btn-small" onclick="eliminarSubtareaTemp(${i})" style="padding:0.2rem 0.5rem;">×</button>
+                </div>`).join('');
+        }
+
+        // TOGGLE SUBTAREA EN AGENDA
+        function toggleSubtarea(actividadId, subtareaId) {
+            const act = appData.actividades.find(a => a.id === actividadId);
+            if (!act || !act.subtareas) return;
+            const s = act.subtareas.find(s => s.id === subtareaId);
+            if (s) s.completada = !s.completada;
+            guardarDatos();
+            renderizarAgenda();
+        }
 
         function getRitualColor(ritualId) {
             const r = appData.rituales.find(r => r.id === ritualId);
@@ -1290,10 +1414,18 @@
                 document.getElementById('actividadCreencia').value = a.creencia || '';
                 document.getElementById('actividadFecha').value = a.fecha;
                 document.getElementById('actividadDuracion').value = a.duracion;
+                document.getElementById('actividadUnidad').value = a.unidad || 'h';
                 document.getElementById('actividadPrioridad').value = a.prioridad;
                 if (selRitual) selRitual.value = a.ritualId || '';
+                document.getElementById('actividadLimitacion').value = a.limitacion || '';
+                document.getElementById('actividadNecesito').value = a.necesito || '';
+                subtareasTemp = a.subtareas ? [...a.subtareas] : [];
+                renderizarSubtareasTemp();
                 document.getElementById('tituloModalActividad').textContent = 'Editar Actividad';
             } else {
+                document.getElementById('actividadUnidad').value = 'h';
+                subtareasTemp = [];
+                renderizarSubtareasTemp();
                 document.getElementById('tituloModalActividad').textContent = 'Nueva Actividad';
             }
             abrirModal('modalActividad');
@@ -1307,6 +1439,7 @@
                 document.getElementById('habitoNombre').value = h.nombre;
                 document.getElementById('habitoFrecuencia').value = h.frecuencia;
                 document.getElementById('habitoDuracion').value = h.duracion;
+                document.getElementById('habitoUnidad').value = h.unidad || 'min';
                 document.getElementById('habitoHora').value = h.hora;
                 document.getElementById('habitoFechaInicio').value = h.fechaInicio;
                 document.getElementById('habitoRecordatorio').checked = h.recordatorio || false;
@@ -1439,9 +1572,9 @@
             }
 
             lista.innerHTML = appData.proyectos.map(p => {
-                const actividades = appData.actividades.filter(a => a.proyectoId === p.id);
+                const actividades = appData.actividades.filter(a => a.proyectoId === p.id).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
                 const completadas = actividades.filter(a => a.completada);
-                const pendientes = actividades.filter(a => !a.completada).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+                const pendientes = actividades.filter(a => !a.completada);
                 
                 return `
                     <div class="task-item">
@@ -1502,8 +1635,12 @@
                 creencia: document.getElementById('actividadCreencia').value,
                 fecha: document.getElementById('actividadFecha').value,
                 duracion: parseFloat(document.getElementById('actividadDuracion').value),
+                unidad: document.getElementById('actividadUnidad').value,
                 prioridad: document.getElementById('actividadPrioridad').value,
                 ritualId: ritualActVal ? parseInt(ritualActVal) : null,
+                limitacion: document.getElementById('actividadLimitacion').value,
+                necesito: document.getElementById('actividadNecesito').value,
+                subtareas: [...subtareasTemp],
                 completada: id ? (appData.actividades.find(a => a.id === parseInt(id))?.completada || false) : false,
                 creado: id ? (appData.actividades.find(a => a.id === parseInt(id))?.creado || new Date().toISOString()) : new Date().toISOString()
             };
@@ -1589,8 +1726,11 @@
                                 <h3 style="margin-top: 0.25rem;">${a.nombre}</h3>
                                 <p style="font-size: 0.9rem; color: #666; margin-top: 0.5rem;">
                                     📅 ${new Date(a.fecha).toLocaleString('es-CL')}<br>
-                                    ⏱️ ${a.duracion}h
+                                    ⏱️ ${duracionTexto(a.duracion, a.unidad || 'h')}
                                     ${a.creencia ? `<br>🧠 ${a.creencia}` : ''}
+                                    ${a.limitacion ? `<br>🔒 ${a.limitacion}` : ''}
+                                    ${a.necesito ? `<br>🛠️ ${a.necesito}` : ''}
+                                    ${a.subtareas && a.subtareas.length > 0 ? `<br>📋 ${a.subtareas.length} subtarea(s)` : ''}
                                 </p>
                             </div>
                         </div>
@@ -1637,6 +1777,7 @@
                 frecuencia: frecuencia,
                 diasSemana: diasSemana,
                 duracion: parseInt(document.getElementById('habitoDuracion').value),
+                unidad: document.getElementById('habitoUnidad').value,
                 hora: document.getElementById('habitoHora').value,
                 recordatorio: document.getElementById('habitoRecordatorio').checked,
                 horaRecordatorio: document.getElementById('habitoHoraRecordatorio').value,
@@ -1687,7 +1828,7 @@
                                     ${ritualBadge}
                                 </div>
                                 <p style="font-size:0.9rem;">
-                                    🔄 ${frecuenciaTexto} · ⏱️ ${h.duracion} min · ⏰ ${h.hora}<br>
+                                    🔄 ${frecuenciaTexto} · ⏱️ ${duracionTexto(h.duracion, h.unidad || 'min')} · ⏰ ${h.hora}<br>
                                     📅 Desde: ${new Date(h.fechaInicio + 'T00:00:00').toLocaleDateString('es-CL')}
                                     ${proyecto ? `<br>🎯 ${proyecto.nombre}` : ''}
                                     ${h.recordatorio ? `<br>🔔 ${h.horaRecordatorio}` : ''}
@@ -1808,112 +1949,180 @@
             }
         }
 
+        function getMinutosDelDia(timeStr) {
+            if (!timeStr) return 9999;
+            const parts = timeStr.split(':');
+            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+
         function renderizarAgendaDia(contenedor) {
             const fechaStr = document.getElementById('fechaAgenda').value;
             const fecha = new Date(fechaStr + 'T00:00:00');
-            
+            const ahora = new Date();
+
             const habitosDelDia = appData.habitos.filter(h => {
                 const inicio = new Date(h.fechaInicio + 'T00:00:00');
                 if (fecha < inicio) return false;
-
                 if (h.frecuencia === 'diaria') return true;
                 if (h.frecuencia === 'semanal') return h.diasSemana.includes(fecha.getDay());
                 if (h.frecuencia === 'mensual') return fecha.getDate() === inicio.getDate();
                 return false;
             });
 
-            const actividadesDelDia = appData.actividades.filter(a => {
+            // Actividades con subtareas de fecha propia → no mostrar padre
+            const actividadesDirectas = appData.actividades.filter(a => {
                 const actFecha = new Date(a.fecha);
-                return actFecha.toDateString() === fecha.toDateString();
+                if (actFecha.toDateString() !== fecha.toDateString()) return false;
+                // Si tiene subtareas con fecha propia, no mostrar el padre
+                return !(a.subtareas && a.subtareas.some(s => s.fechaPropia));
             });
 
-            const ahora = new Date();
-            const atrasados = habitosDelDia.filter(h => {
-                if (fecha.toDateString() !== ahora.toDateString()) return false;
-                const [hora, min] = h.hora.split(':');
-                const horaHabito = new Date();
-                horaHabito.setHours(parseInt(hora), parseInt(min), 0, 0);
-                return horaHabito < ahora;
+            // Subtareas con fecha propia que caen hoy
+            const subtareasDelDia = [];
+            appData.actividades.forEach(a => {
+                if (a.subtareas) {
+                    a.subtareas.filter(s => s.fechaPropia && s.fecha && new Date(s.fecha).toDateString() === fecha.toDateString())
+                        .forEach(s => subtareasDelDia.push({ ...s, _actividadId: a.id, _actividadNombre: a.nombre }));
+                }
             });
 
-            const totalHoras = habitosDelDia.reduce((sum, h) => sum + (h.duracion / 60), 0) +
-                             actividadesDelDia.reduce((sum, a) => sum + a.duracion, 0);
+            // Calcular total horas
+            const totalHoras = habitosDelDia.reduce((sum, h) => sum + duracionAHoras(h.duracion, h.unidad || 'min'), 0)
+                + actividadesDirectas.reduce((sum, a) => sum + duracionAHoras(a.duracion, a.unidad || 'h'), 0);
 
             let html = `<h3 style="color: var(--purple); margin-bottom: 1rem;">Total: ${totalHoras.toFixed(1)} horas</h3>`;
 
-            if (atrasados.length > 0) {
-                html += `
-                    <div class="section-atrasadas">
-                        <h3>⚠️ ATRASADAS</h3>
-                        ${atrasados.map(h => `
-                            <div class="task-item atrasada">
-                                <strong>${h.nombre}</strong> - ${h.hora} (${h.duracion} min)
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            }
+            // Combinar y ordenar todo cronológicamente
+            const items = [
+                ...habitosDelDia.map(h => ({ ...h, _tipo: 'habito', _min: getMinutosDelDia(h.hora) })),
+                ...actividadesDirectas.map(a => ({ ...a, _tipo: 'actividad', _min: getMinutosDelDia(new Date(a.fecha).toTimeString().substring(0, 5)) })),
+                ...subtareasDelDia.map(s => ({ ...s, _tipo: 'subtarea', _min: getMinutosDelDia(s.fecha ? new Date(s.fecha).toTimeString().substring(0, 5) : null) }))
+            ];
 
-            html += `<h3 style="margin: 1rem 0;">Hábitos (${habitosDelDia.length})</h3>`;
+            // Atrasados primero, luego por hora
+            const esAtrasado = item => {
+                if (fecha.toDateString() !== ahora.toDateString()) return false;
+                if (item._tipo === 'habito') {
+                    const [h, m] = item.hora.split(':');
+                    const t = new Date(); t.setHours(parseInt(h), parseInt(m), 0, 0);
+                    return t < ahora && !(item.completados && item.completados[fechaStr]);
+                }
+                return new Date(item.fecha) < ahora && !item.completada;
+            };
 
-            if (habitosDelDia.length === 0) {
-                html += '<p style="color: #666;">No hay hábitos.</p>';
+            items.sort((a, b) => {
+                const aAtras = esAtrasado(a) ? 0 : 1;
+                const bAtras = esAtrasado(b) ? 0 : 1;
+                if (aAtras !== bAtras) return aAtras - bAtras;
+                return a._min - b._min;
+            });
+
+            if (items.length === 0) {
+                html += '<p style="color: #666; text-align:center; margin-top:1rem;">No hay actividades ni hábitos para este día.</p>';
             } else {
-                html += habitosDelDia.map(h => {
-                    const completadoHoy = h.completados && h.completados[fechaStr];
-                    return `
-                        <div class="task-item ${completadoHoy ? 'completada' : ''}">
-                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                                <div>
-                                    ${completadoHoy ? '<span class="badge badge-green">✓</span>' : ''}
-                                    <strong>${h.nombre}</strong> - ${h.hora} (${h.duracion} min)
+                html += items.map(item => {
+                    if (item._tipo === 'habito') {
+                        const h = item;
+                        const completadoHoy = h.completados && h.completados[fechaStr];
+                        const atrasado = esAtrasado(h);
+                        const ritualBadge = h.ritualId ? getRitualBadge(h.ritualId) : '';
+                        return `
+                            <div class="task-item ${completadoHoy ? 'completada' : ''} ${atrasado ? 'atrasada' : ''}">
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                                    <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                                        <span style="font-size:0.8rem; background:var(--gold); color:white; padding:2px 6px; border-radius:4px;">⚡ Hábito</span>
+                                        ${ritualBadge}
+                                        ${completadoHoy ? '<span class="badge badge-green">✓</span>' : ''}
+                                        <strong>${h.nombre}</strong>
+                                        <span style="color:#666; font-size:0.85rem;">${h.hora} · ${duracionTexto(h.duracion, h.unidad || 'min')}</span>
+                                    </div>
+                                    <button class="btn btn-small ${completadoHoy ? 'btn-secondary' : 'btn-primary'}" onclick="toggleHabitoCompletado(${h.id}, '${fechaStr}')">
+                                        ${completadoHoy ? 'Reabrir' : 'Completar'}
+                                    </button>
                                 </div>
-                                <button class="btn btn-small ${completadoHoy ? 'btn-secondary' : 'btn-primary'}"
-                                    onclick="toggleHabitoCompletado(${h.id}, '${fechaStr}')">
-                                    ${completadoHoy ? 'Reabrir' : 'Completar'}
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            html += `<h3 style="margin: 1rem 0;">Actividades (${actividadesDelDia.length})</h3>`;
-            
-            if (actividadesDelDia.length === 0) {
-                html += '<p style="color: #666;">No hay actividades.</p>';
-            } else {
-                html += actividadesDelDia.map(a => {
+                            </div>`;
+                    }
+                    if (item._tipo === 'subtarea') {
+                        const s = item;
+                        const hora = s.fecha ? new Date(s.fecha).toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'}) : '';
+                        return `
+                            <div class="task-item ${s.completada ? 'completada' : ''}" style="border-left-color: #9c27b0;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                                    <div>
+                                        <span style="font-size:0.75rem; color:#666;">↳ ${s._actividadNombre}</span><br>
+                                        ${s.completada ? '<span class="badge badge-green">✓</span>' : ''}
+                                        <strong>${s.nombre}</strong>
+                                        ${hora ? `<span style="color:#666; font-size:0.85rem;"> · ${hora}</span>` : ''}
+                                        ${s.duracion ? `<span style="color:#666; font-size:0.85rem;"> · ${duracionTexto(s.duracion, s.unidad||'min')}</span>` : ''}
+                                    </div>
+                                    <button class="btn btn-small ${s.completada ? 'btn-secondary' : 'btn-primary'}" onclick="toggleSubtarea(${s._actividadId}, ${s.id})">
+                                        ${s.completada ? 'Reabrir' : 'Completar'}
+                                    </button>
+                                </div>
+                            </div>`;
+                    }
+                    // actividad
+                    const a = item;
                     const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
-                    const esAtrasada = new Date(a.fecha) < new Date() && !a.completada;
-                    
+                    const atrasado = esAtrasado(a);
+                    const ritualBadge = a.ritualId ? getRitualBadge(a.ritualId) : '';
+                    const subtareasMismaFecha = (a.subtareas || []).filter(s => !s.fechaPropia);
                     return `
-                        <div class="task-item ${esAtrasada ? 'atrasada' : ''} ${a.completada ? 'completada' : ''}">
-                            <span class="badge badge-purple">${proyecto?.nombre || 'Sin proyecto'}</span>
-                            ${a.completada ? '<span class="badge badge-green">✓</span>' : ''}
-                            <h4 style="margin-top: 0.5rem;">${a.nombre}</h4>
-                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">
-                                ${new Date(a.fecha).toLocaleTimeString('es-CL', {hour: '2-digit', minute:'2-digit'})} - ${a.duracion}h
-                            </p>
-                            <div class="task-actions">
+                        <div class="task-item ${atrasado ? 'atrasada' : ''} ${a.completada ? 'completada' : ''}">
+                            <div style="display:flex; justify-content:space-between; align-items:start; gap:0.5rem;">
+                                <div style="flex:1;">
+                                    <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.25rem;">
+                                        <span class="badge badge-purple">${proyecto?.nombre || 'Sin proyecto'}</span>
+                                        ${a.completada ? '<span class="badge badge-green">✓</span>' : ''}
+                                        ${atrasado ? '<span class="badge badge-red">ATRASADA</span>' : ''}
+                                        ${ritualBadge}
+                                    </div>
+                                    <h4>${a.nombre}</h4>
+                                    <p style="font-size:0.85rem; color:#666; margin-top:0.25rem;">
+                                        ${new Date(a.fecha).toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'})} · ${duracionTexto(a.duracion, a.unidad || 'h')}
+                                        ${a.limitacion ? `<br>🧠 ${a.limitacion}` : ''}
+                                    </p>
+                                    ${subtareasMismaFecha.length > 0 ? `
+                                        <div style="margin-top:0.5rem;">
+                                            ${subtareasMismaFecha.map(s => `
+                                                <div style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0.5rem; background:white; border-radius:6px; margin-bottom:0.25rem; font-size:0.85rem; cursor:pointer;" onclick="toggleSubtarea(${a.id}, ${s.id})">
+                                                    <span style="color:${s.completada ? 'var(--green)' : '#aaa'}; font-size:1rem;">${s.completada ? '☑' : '☐'}</span>
+                                                    <span style="${s.completada ? 'text-decoration:line-through; color:#999;' : ''}">${s.nombre}</span>
+                                                </div>`).join('')}
+                                        </div>` : ''}
+                                </div>
+                            </div>
+                            <div class="task-actions" style="margin-top:0.5rem;">
                                 <button class="btn btn-small ${a.completada ? 'btn-secondary' : 'btn-primary'}" onclick="toggleCompletada(${a.id})">
                                     ${a.completada ? 'Reabrir' : 'Completar'}
                                 </button>
                                 <button class="btn btn-edit btn-small" onclick="abrirModalActividad(${a.id})">Editar</button>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 }).join('');
             }
 
             contenedor.innerHTML = html;
         }
 
+        function moverActividad(id, deltaDias) {
+            const act = appData.actividades.find(a => a.id === id);
+            if (!act) return;
+            const fecha = new Date(act.fecha);
+            fecha.setDate(fecha.getDate() + deltaDias);
+            act.fecha = fecha.toISOString().slice(0, 16);
+            guardarDatos();
+            renderizarAgenda();
+        }
+
+        function toggleRitualWeek(elemId) {
+            const el = document.getElementById(elemId);
+            if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
         function renderizarAgendaSemana(contenedor) {
             const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
             const diasValores = [1, 2, 3, 4, 5, 6, 0];
-
-            // Calcular el lunes de la semana seleccionada
             const fechaStr = document.getElementById('fechaAgenda').value;
             const fechaRef = new Date(fechaStr + 'T00:00:00');
             const diaSemana = fechaRef.getDay();
@@ -1928,6 +2137,7 @@
                 fechaDia.setDate(lunes.getDate() + i);
                 const diaValor = diasValores[i];
                 const fechaDiaStr = fechaDia.toISOString().split('T')[0];
+                const esHoy = fechaDia.toDateString() === new Date().toDateString();
 
                 const habitosDia = appData.habitos.filter(h => {
                     const inicio = new Date(h.fechaInicio + 'T00:00:00');
@@ -1939,34 +2149,74 @@
                 });
 
                 const actividadesDia = appData.actividades.filter(a => {
-                    const actFecha = new Date(a.fecha);
-                    return actFecha.toDateString() === fechaDia.toDateString();
+                    if (a.subtareas && a.subtareas.some(s => s.fechaPropia)) return false;
+                    return new Date(a.fecha).toDateString() === fechaDia.toDateString();
                 });
 
-                const horasHabitos = habitosDia.reduce((sum, h) => sum + (h.duracion / 60), 0);
-                const horasActividades = actividadesDia.reduce((sum, a) => sum + a.duracion, 0);
-                const horasTotales = horasHabitos + horasActividades;
+                const subtareasDia = [];
+                appData.actividades.forEach(a => {
+                    (a.subtareas || []).filter(s => s.fechaPropia && s.fecha && new Date(s.fecha).toDateString() === fechaDia.toDateString())
+                        .forEach(s => subtareasDia.push({ ...s, _actividadId: a.id, _actividadNombre: a.nombre }));
+                });
 
-                const fechaLabel = fechaDia.toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'});
+                const totalHoras = habitosDia.reduce((s, h) => s + duracionAHoras(h.duracion, h.unidad || 'min'), 0)
+                    + actividadesDia.reduce((s, a) => s + duracionAHoras(a.duracion, a.unidad || 'h'), 0);
 
-                html += `
-                    <div class="week-day-column">
-                        <div class="week-day-header">${dias[i]}<br><small style="font-weight:400;">${fechaLabel}</small></div>
-                        <div class="week-day-total">${horasTotales.toFixed(1)}h total</div>
-                        ${habitosDia.map(h => {
+                const fechaLabel = fechaDia.toLocaleDateString('es-CL', {day:'2-digit', month:'2-digit'});
+
+                // Combinar y ordenar por hora
+                const itemsDia = [
+                    ...habitosDia.map(h => ({ ...h, _tipo:'habito', _min: getMinutosDelDia(h.hora) })),
+                    ...actividadesDia.map(a => ({ ...a, _tipo:'actividad', _min: getMinutosDelDia(new Date(a.fecha).toTimeString().substring(0,5)) })),
+                    ...subtareasDia.map(s => ({ ...s, _tipo:'subtarea', _min: getMinutosDelDia(s.fecha ? new Date(s.fecha).toTimeString().substring(0,5) : null) }))
+                ].sort((a, b) => a._min - b._min);
+
+                html += `<div class="week-day-column" ${esHoy ? 'style="background:#EDE7F6;"' : ''}>
+                    <div class="week-day-header">${dias[i]}<br><small style="font-weight:400;">${fechaLabel}</small></div>
+                    <div class="week-day-total">${totalHoras.toFixed(1)}h</div>
+                    ${itemsDia.map(item => {
+                        if (item._tipo === 'habito') {
+                            const h = item;
                             const completado = h.completados && h.completados[fechaDiaStr];
-                            return `<div class="week-task-mini ${completado ? 'completada' : ''}" style="border-left-color: var(--gold);">
-                                ⚡ ${h.hora} ${h.nombre} (${h.duracion}min)
+                            const ritual = h.ritualId ? appData.rituales.find(r => r.id === h.ritualId) : null;
+                            const color = ritual ? getRitualColor(h.ritualId) : 'var(--gold)';
+                            const ritualId = `wr-${h.id}-${fechaDiaStr}`;
+                            return `<div class="week-task-mini ${completado ? 'completada' : ''}" style="border-left-color:${color}; cursor:default;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:2px;">
+                                    <span style="flex:1; overflow:hidden;" onclick="toggleRitualWeek('${ritualId}')" title="Ver ritual">⚡ ${h.hora} ${h.nombre} (${duracionTexto(h.duracion, h.unidad||'min')}) ${completado ? '✓' : ''}</span>
+                                    <button style="border:none; background:${completado ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:4px; padding:1px 4px; font-size:0.6rem; cursor:pointer; flex-shrink:0;" onclick="toggleHabitoCompletado(${h.id},'${fechaDiaStr}')">${completado ? '↩' : '✓'}</button>
+                                </div>
+                                ${ritual ? `<div id="${ritualId}" style="display:none; margin-top:4px; padding:4px; background:var(--lavender-light); border-radius:4px; font-size:0.62rem;">
+                                    ${ritual.frases ? ritual.frases.map((f,i) => `<div style="margin-bottom:2px;"><strong style="color:var(--purple);">${i+1}.</strong> ${f}</div>`).join('') : ''}
+                                </div>` : ''}
                             </div>`;
-                        }).join('')}
-                        ${actividadesDia.map(a => {
-                            const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
-                            return `<div class="week-task-mini ${a.completada ? 'completada' : ''}" onclick="toggleCompletadaSemana(${a.id})" title="${a.completada ? 'Reabrir' : 'Completar'}">
-                                📌 ${new Date(a.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})} ${a.nombre} (${a.duracion}h)${a.completada ? ' ✓' : ''}
+                        }
+                        if (item._tipo === 'subtarea') {
+                            const s = item;
+                            const hora = s.fecha ? new Date(s.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) : '';
+                            return `<div class="week-task-mini ${s.completada ? 'completada' : ''}" style="border-left-color:#9c27b0; cursor:pointer;" onclick="toggleSubtarea(${s._actividadId},${s.id})">
+                                ↳ ${hora} ${s.nombre} ${s.completada ? '✓' : ''}
                             </div>`;
-                        }).join('')}
-                    </div>
-                `;
+                        }
+                        // actividad
+                        const a = item;
+                        const ritual = a.ritualId ? appData.rituales.find(r => r.id === a.ritualId) : null;
+                        const ritualId = `wr-a-${a.id}-${fechaDiaStr}`;
+                        return `<div class="week-task-mini ${a.completada ? 'completada' : ''}" style="cursor:default;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:2px;">
+                                <span style="flex:1; overflow:hidden;" onclick="${ritual ? `toggleRitualWeek('${ritualId}')` : ''}"  title="${ritual ? 'Ver ritual' : ''}">📌 ${new Date(a.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})} ${a.nombre} (${duracionTexto(a.duracion, a.unidad||'h')}) ${a.completada ? '✓' : ''}</span>
+                                <button style="border:none; background:${a.completada ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:4px; padding:1px 4px; font-size:0.6rem; cursor:pointer; flex-shrink:0;" onclick="toggleCompletadaSemana(${a.id})">${a.completada ? '↩' : '✓'}</button>
+                            </div>
+                            <div style="display:flex; gap:2px; margin-top:3px; justify-content:flex-end;">
+                                <button style="border:1px solid #ccc; background:white; border-radius:3px; padding:1px 5px; font-size:0.6rem; cursor:pointer;" onclick="moverActividad(${a.id},-1)" title="Mover al día anterior">←</button>
+                                <button style="border:1px solid #ccc; background:white; border-radius:3px; padding:1px 5px; font-size:0.6rem; cursor:pointer;" onclick="moverActividad(${a.id},1)" title="Mover al día siguiente">→</button>
+                            </div>
+                            ${ritual ? `<div id="${ritualId}" style="display:none; margin-top:4px; padding:4px; background:var(--lavender-light); border-radius:4px; font-size:0.62rem;">
+                                ${ritual.frases ? ritual.frases.map((f,i) => `<div style="margin-bottom:2px;"><strong style="color:var(--purple);">${i+1}.</strong> ${f}</div>`).join('') : ''}
+                            </div>` : ''}
+                        </div>`;
+                    }).join('')}
+                </div>`;
             }
 
             html += '</div>';
