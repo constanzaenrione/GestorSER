@@ -700,20 +700,6 @@
                 <div id="listaEstaSemana"></div>
             </div>
 
-            <div class="card">
-                <h2 class="card-title">⚙️ Configuración</h2>
-                <p style="font-weight:600; color:var(--purple); margin-bottom:0.5rem;">Horas de jornada por día</p>
-                <p style="font-size:0.82rem; color:#888; margin-bottom:1rem;">La agenda marcará en rojo los días que superen el límite configurado. Usa 0 para días no laborables.</p>
-                <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:0.5rem; text-align:center;">
-                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Lun</div><input type="number" id="jornada1" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
-                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Mar</div><input type="number" id="jornada2" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
-                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Mié</div><input type="number" id="jornada3" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
-                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Jue</div><input type="number" id="jornada4" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
-                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Vie</div><input type="number" id="jornada5" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
-                    <div><div style="font-size:0.75rem; font-weight:700; color:#888; margin-bottom:4px;">Sáb</div><input type="number" id="jornada6" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem; opacity:0.7;" onchange="guardarConfig()"></div>
-                    <div><div style="font-size:0.75rem; font-weight:700; color:#888; margin-bottom:4px;">Dom</div><input type="number" id="jornada0" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem; opacity:0.7;" onchange="guardarConfig()"></div>
-                </div>
-            </div>
         </div>
 
         <!-- PROYECTOS -->
@@ -841,9 +827,26 @@
                     <button class="btn btn-secondary" onclick="importarDatos()">📤 Importar Datos</button>
                 </div>
 
-                <h3 style="color: var(--purple); margin: 1.5rem 0 1rem;">Creencias Limitantes</h3>
-                <button class="btn btn-secondary" onclick="abrirModalCreencia()">+ Nueva Creencia</button>
-                <div id="listaCreencias"></div>
+                <h3 style="color: var(--purple); margin-bottom: 0.75rem;">⏰ Jornada de Trabajo</h3>
+                <p style="font-size:0.82rem; color:#888; margin-bottom:1rem;">Horas planificables por día. La agenda marcará en rojo los días que superen este límite. Usa 0 para días no laborables.</p>
+                <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:0.5rem; text-align:center; margin-bottom:2rem;">
+                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Lun</div><input type="number" id="jornada1" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Mar</div><input type="number" id="jornada2" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Mié</div><input type="number" id="jornada3" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Jue</div><input type="number" id="jornada4" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Vie</div><input type="number" id="jornada5" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:#aaa; margin-bottom:4px;">Sáb</div><input type="number" id="jornada6" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:#aaa; margin-bottom:4px;">Dom</div><input type="number" id="jornada0" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                    <h3 style="color: var(--purple); margin:0;">💭 Creencias Limitantes</h3>
+                    <button class="btn btn-secondary btn-small" id="btnToggleCreencias" onclick="toggleCreencias()">▼ Mostrar</button>
+                </div>
+                <div id="creenciasPanel" style="display:none;">
+                    <button class="btn btn-secondary" onclick="abrirModalCreencia()" style="margin-bottom:0.75rem;">+ Nueva Creencia</button>
+                    <div id="listaCreencias"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -1404,7 +1407,10 @@
             if (vista === 'agenda') renderizarAgenda();
             if (vista === 'habitos') { renderizarHabitos(); if (vistaHabitosActual === 'dashboard') renderizarDashboardHabitos(); }
             if (vista === 'rituales') renderizarRituales();
-            if (vista === 'parametros') renderizarCreencias();
+            if (vista === 'parametros') {
+                renderizarCreencias();
+                poblarJornada();
+            }
         }
 
         // MODALES
@@ -2862,6 +2868,14 @@
             return Number(j || 8);
         }
 
+        function poblarJornada() {
+            const j = appData.config?.jornadaHoras || {};
+            [0, 1, 2, 3, 4, 5, 6].forEach(d => {
+                const inp = document.getElementById(`jornada${d}`);
+                if (inp) inp.value = typeof j === 'object' ? (j[d] ?? 0) : (j || 8);
+            });
+        }
+
         function guardarConfig() {
             const jornadas = {};
             [0, 1, 2, 3, 4, 5, 6].forEach(d => {
@@ -2873,6 +2887,16 @@
             renderizarAgenda();
         }
 
+        let creenciasExpandidas = false;
+
+        function toggleCreencias() {
+            creenciasExpandidas = !creenciasExpandidas;
+            const panel = document.getElementById('creenciasPanel');
+            const btn = document.getElementById('btnToggleCreencias');
+            if (panel) panel.style.display = creenciasExpandidas ? 'block' : 'none';
+            if (btn) btn.textContent = creenciasExpandidas ? '▲ Ocultar' : '▼ Mostrar';
+        }
+
         function renderizarTodo() {
             renderizarDashboard();
             renderizarProyectos();
@@ -2882,11 +2906,7 @@
             if (vistaHabitosActual === 'dashboard') renderizarDashboardHabitos();
             renderizarRituales();
             renderizarCreencias();
-            const j = appData.config?.jornadaHoras || {};
-            [0, 1, 2, 3, 4, 5, 6].forEach(d => {
-                const inp = document.getElementById(`jornada${d}`);
-                if (inp) inp.value = (typeof j === 'object' ? (j[d] ?? 0) : (j || 8));
-            });
+            poblarJornada();
         }
 
         init();
