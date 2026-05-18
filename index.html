@@ -10,6 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.svg">
     <title>Gestor Proyectos SER</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -661,7 +662,12 @@
                 </div>
                 <h1>Gestor Proyectos SER</h1>
             </div>
-            <a href="https://www.instagram.com/constanza.enrione" target="_blank" class="social-link">@constanza.enrione</a>
+            <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                <a href="https://www.instagram.com/constanza.enrione" target="_blank" class="social-link">@constanza.enrione</a>
+                <div id="authStatus">
+                    <button onclick="abrirModalAuth()" style="background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:20px; padding:4px 14px; font-size:0.8rem; cursor:pointer;">Iniciar sesión</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1205,6 +1211,29 @@
     </div>
 
     <!-- Modal Ver Ritual -->
+    <div id="modalAuth" class="modal">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Acceder a tu cuenta</h2>
+                <button class="close-btn" onclick="cerrarModalAuth()">&times;</button>
+            </div>
+            <div style="margin-bottom:1rem;">
+                <label class="form-label">Correo electrónico</label>
+                <input type="email" id="authEmail" class="form-input" placeholder="tu@correo.com">
+            </div>
+            <div style="margin-bottom:1rem;">
+                <label class="form-label">Contraseña</label>
+                <input type="password" id="authPassword" class="form-input" placeholder="Mínimo 6 caracteres">
+            </div>
+            <p id="authMensaje" style="font-size:0.85rem; margin-bottom:1rem; min-height:1.2em;"></p>
+            <div style="display:flex; gap:0.75rem;">
+                <button class="btn btn-primary" style="flex:1;" onclick="iniciarSesion()">Iniciar sesión</button>
+                <button class="btn btn-secondary" style="flex:1;" onclick="registrarse()">Crear cuenta</button>
+            </div>
+            <p style="font-size:0.78rem; color:#888; text-align:center; margin-top:1rem;">Tus datos se sincronizan en la nube y quedan disponibles en cualquier dispositivo.</p>
+        </div>
+    </div>
+
     <div id="modalVerRitual" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1375,6 +1404,12 @@
             actualizarFiltrosProyectos();
             actualizarSelectsHabito();
             renderizarTodo();
+            // Auth listener — se dispara al cargar y cuando el usuario inicia/cierra sesión
+            sb.auth.onAuthStateChange((event, session) => {
+                usuarioActual = session?.user || null;
+                actualizarHeaderAuth();
+                if (event === 'SIGNED_IN') sincronizarDesdeSupabase();
+            });
         }
 
         function actualizarSelectsHabito() {
@@ -1886,9 +1921,10 @@
                 }
 
                 const proyecto = h.proyectoId ? appData.proyectos.find(p => p.id === h.proyectoId) : null;
-                const ritualBadge = h.ritualId ? getRitualBadge(h.ritualId) : '';
+                const ritual = h.ritualId ? appData.rituales.find(r => r.id === h.ritualId) : null;
+                const ritualBadge = ritual ? `<span class="ritual-badge" style="background:${getRitualColor(h.ritualId)}; cursor:pointer;" onclick="event.stopPropagation(); verRitualModal(${h.ritualId})">${ritual.numero || ritual.nombre.substring(0,6)}</span>` : '';
                 return `
-                    <div class="task-item">
+                    <div class="task-item" ${ritual ? `onclick="verRitualModal(${h.ritualId})" style="cursor:pointer;"` : ''}>
                         <div style="display: flex; justify-content: space-between; align-items: start; gap:0.5rem;">
                             <div style="flex: 1;">
                                 <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.25rem;">
@@ -1902,7 +1938,7 @@
                                     ${h.recordatorio ? `<br>🔔 ${h.horaRecordatorio}` : ''}
                                 </p>
                             </div>
-                            <button class="btn btn-edit btn-small" onclick="abrirModalHabito(${h.id})">Editar</button>
+                            <button class="btn btn-edit btn-small" onclick="event.stopPropagation(); abrirModalHabito(${h.id})">Editar</button>
                         </div>
                     </div>
                 `;
@@ -2100,11 +2136,9 @@
                         const completadoHoy = h.completados && h.completados[fechaStr];
                         const atrasado = esAtrasado(h);
                         const ritual = h.ritualId ? appData.rituales.find(r => r.id === h.ritualId) : null;
-                        const rEid = `rd-h-${h.id}-${fechaStr.replace(/-/g,'')}`;
-                        const ritualBtn = ritual ? `<span class="ritual-badge" style="background:${getRitualColor(h.ritualId)}; cursor:pointer;" onclick="toggleRitualDia('${rEid}')">${ritual.numero || ritual.nombre}</span>` : '';
-                        const ritualPanel = ritual && ritual.frases ? `<div id="${rEid}" style="display:none; margin-top:0.5rem; padding:0.75rem; background:var(--lavender-light); border-radius:8px; font-size:0.85rem;">${ritual.frases.map((f,i)=>`<p style="margin-bottom:0.4rem;"><strong style="color:var(--purple);font-size:0.78rem;">${['Seguridad Corporal','Gestión de la Emoción','Cambio de Lenguaje para Avanzar','Reprogramación','Acción'][i]}:</strong><br>${f}</p>`).join('')}</div>` : '';
+                        const ritualBtn = ritual ? `<span class="ritual-badge" style="background:${getRitualColor(h.ritualId)}; cursor:pointer;" onclick="event.stopPropagation(); verRitualModal(${h.ritualId})">${ritual.numero || ritual.nombre}</span>` : '';
                         return `
-                            <div class="task-item ${completadoHoy ? 'completada' : ''} ${atrasado ? 'atrasada' : ''}">
+                            <div class="task-item ${completadoHoy ? 'completada' : ''} ${atrasado ? 'atrasada' : ''}" ${ritual ? `onclick="verRitualModal(${h.ritualId})" style="cursor:pointer;"` : ''}>
                                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
                                     <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                                         <span style="font-size:0.8rem; background:var(--gold); color:white; padding:2px 6px; border-radius:4px;">⚡ Hábito</span>
@@ -2113,11 +2147,10 @@
                                         <strong>${h.nombre}</strong>
                                         <span style="color:#666; font-size:0.85rem;">${h.hora} · ${duracionTexto(h.duracion, h.unidad || 'min')}</span>
                                     </div>
-                                    <button class="btn btn-small ${completadoHoy ? 'btn-secondary' : 'btn-primary'}" onclick="toggleHabitoCompletado(${h.id}, '${fechaStr}')">
+                                    <button class="btn btn-small ${completadoHoy ? 'btn-secondary' : 'btn-primary'}" onclick="event.stopPropagation(); toggleHabitoCompletado(${h.id}, '${fechaStr}')">
                                         ${completadoHoy ? 'Reabrir' : 'Completar'}
                                     </button>
                                 </div>
-                                ${ritualPanel}
                             </div>`;
                     }
                     if (item._tipo === 'subtarea') {
@@ -2455,15 +2488,11 @@
                             const completado = h.completados && h.completados[fechaDiaStr];
                             const ritual = h.ritualId ? appData.rituales.find(r => r.id === h.ritualId) : null;
                             const color = ritual ? getRitualColor(h.ritualId) : 'var(--gold)';
-                            const ritualId = `wr-${h.id}-${fechaDiaStr}`;
-                            return `<div class="week-task-mini ${completado ? 'completada' : ''}" style="border-left-color:${color}; cursor:default;">
+                            return `<div class="week-task-mini ${completado ? 'completada' : ''}" style="border-left-color:${color}; ${ritual ? 'cursor:pointer;' : 'cursor:default;'}" ${ritual ? `onclick="verRitualModal(${h.ritualId})"` : ''}>
                                 <div style="display:flex; justify-content:space-between; align-items:center; gap:2px;">
-                                    <span style="flex:1; overflow:hidden; ${ritual ? 'cursor:pointer;' : ''}" onclick="${ritual ? `toggleRitualWeek('${ritualId}')` : ''}" title="${ritual ? `Ritual N°${ritual.numero || ritual.nombre}` : ''}">⚡ ${h.hora} ${h.nombre} (${duracionTexto(h.duracion, h.unidad||'min')}) ${completado ? '✓' : ''}</span>
-                                    <button style="border:none; background:${completado ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:4px; padding:1px 4px; font-size:0.6rem; cursor:pointer; flex-shrink:0;" onclick="toggleHabitoCompletado(${h.id},'${fechaDiaStr}')">${completado ? '↩' : '✓'}</button>
+                                    <span style="flex:1; overflow:hidden;">⚡ ${h.hora} ${h.nombre} (${duracionTexto(h.duracion, h.unidad||'min')}) ${completado ? '✓' : ''}</span>
+                                    <button style="border:none; background:${completado ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:4px; padding:1px 4px; font-size:0.6rem; cursor:pointer; flex-shrink:0;" onclick="event.stopPropagation(); toggleHabitoCompletado(${h.id},'${fechaDiaStr}')">${completado ? '↩' : '✓'}</button>
                                 </div>
-                                ${ritual ? `<div id="${ritualId}" style="display:none; margin-top:4px; padding:4px; background:var(--lavender-light); border-radius:4px; font-size:0.62rem;">
-                                    ${ritual.frases ? ritual.frases.map((f,i) => `<div style="margin-bottom:2px;"><strong style="color:var(--purple);">${i+1}.</strong> ${f}</div>`).join('') : ''}
-                                </div>` : ''}
                             </div>`;
                         }
                         if (item._tipo === 'subtarea') {
@@ -2841,6 +2870,7 @@
         // ALMACENAMIENTO
         function guardarDatos() {
             localStorage.setItem('appDataSER', JSON.stringify(appData));
+            sincronizarHaciaSupabase();
         }
 
         function cargarDatos() {
@@ -2909,7 +2939,88 @@
             poblarJornada();
         }
 
+        // SUPABASE
+        const SUPABASE_URL = 'https://fvyczwosjpzlsqoliosv.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_efUqhEN1v2QoeF3XDft2bw_h2xkUw3U';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let usuarioActual = null;
+
         init();
+
+        function actualizarHeaderAuth() {
+            const div = document.getElementById('authStatus');
+            if (!div) return;
+            if (usuarioActual) {
+                div.innerHTML = `<div style="display:flex; align-items:center; gap:0.5rem;">
+                    <span style="color:rgba(255,255,255,0.85); font-size:0.78rem; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${usuarioActual.email}">☁️ ${usuarioActual.email}</span>
+                    <button onclick="cerrarSesion()" style="background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:20px; padding:4px 10px; font-size:0.75rem; cursor:pointer;">Salir</button>
+                </div>`;
+            } else {
+                div.innerHTML = `<button onclick="abrirModalAuth()" style="background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:20px; padding:4px 14px; font-size:0.8rem; cursor:pointer;">Iniciar sesión</button>`;
+            }
+        }
+
+        function abrirModalAuth() {
+            document.getElementById('authMensaje').textContent = '';
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authPassword').value = '';
+            document.getElementById('modalAuth').classList.add('active');
+        }
+
+        function cerrarModalAuth() {
+            document.getElementById('modalAuth').classList.remove('active');
+        }
+
+        async function iniciarSesion() {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const msg = document.getElementById('authMensaje');
+            msg.style.color = '#666';
+            msg.textContent = 'Iniciando sesión...';
+            const { error } = await sb.auth.signInWithPassword({ email, password });
+            if (error) { msg.style.color = 'var(--red)'; msg.textContent = error.message; return; }
+            cerrarModalAuth();
+        }
+
+        async function registrarse() {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const msg = document.getElementById('authMensaje');
+            if (password.length < 6) { msg.style.color = 'var(--red)'; msg.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+            msg.style.color = '#666';
+            msg.textContent = 'Creando cuenta...';
+            const { error } = await sb.auth.signUp({ email, password });
+            if (error) { msg.style.color = 'var(--red)'; msg.textContent = error.message; return; }
+            msg.style.color = 'var(--green)';
+            msg.textContent = 'Cuenta creada. Revisa tu correo para confirmar.';
+        }
+
+        async function cerrarSesion() {
+            await sb.auth.signOut();
+            usuarioActual = null;
+            actualizarHeaderAuth();
+        }
+
+        async function sincronizarDesdeSupabase() {
+            const { data, error } = await sb.from('user_data').select('data').eq('user_id', usuarioActual.id).single();
+            if (error && error.code !== 'PGRST116') { console.error('Error cargando datos:', error); return; }
+            if (data?.data && Object.keys(data.data).length > 0) {
+                const remoto = data.data;
+                if (!remoto.rituales || remoto.rituales.length === 0) remoto.rituales = RITUALES_DEFAULT;
+                if (!remoto.config) remoto.config = { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 } };
+                Object.assign(appData, remoto);
+                localStorage.setItem('appDataSER', JSON.stringify(appData));
+                renderizarTodo();
+            } else {
+                // Primera vez: subir datos locales a Supabase
+                await sincronizarHaciaSupabase();
+            }
+        }
+
+        async function sincronizarHaciaSupabase() {
+            if (!usuarioActual) return;
+            await sb.from('user_data').upsert({ user_id: usuarioActual.id, data: appData, updated_at: new Date().toISOString() });
+        }
 
         // Registrar Service Worker para PWA
         if ('serviceWorker' in navigator) {
