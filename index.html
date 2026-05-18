@@ -702,13 +702,16 @@
 
             <div class="card">
                 <h2 class="card-title">⚙️ Configuración</h2>
-                <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
-                    <label style="font-weight:600; color:var(--purple);">Horas jornada de trabajo:</label>
-                    <div style="display:flex; align-items:center; gap:0.5rem;">
-                        <input type="number" id="jornadaHorasInput" min="1" max="24" class="form-input" style="width:80px; text-align:center;" onchange="guardarConfig()">
-                        <span style="color:#666; font-size:0.9rem;">h/día</span>
-                    </div>
-                    <span style="font-size:0.82rem; color:#888;">La agenda marcará en rojo los días que superen este límite.</span>
+                <p style="font-weight:600; color:var(--purple); margin-bottom:0.5rem;">Horas de jornada por día</p>
+                <p style="font-size:0.82rem; color:#888; margin-bottom:1rem;">La agenda marcará en rojo los días que superen el límite configurado. Usa 0 para días no laborables.</p>
+                <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:0.5rem; text-align:center;">
+                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Lun</div><input type="number" id="jornada1" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Mar</div><input type="number" id="jornada2" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Mié</div><input type="number" id="jornada3" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Jue</div><input type="number" id="jornada4" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Vie</div><input type="number" id="jornada5" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:#888; margin-bottom:4px;">Sáb</div><input type="number" id="jornada6" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem; opacity:0.7;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:#888; margin-bottom:4px;">Dom</div><input type="number" id="jornada0" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem; opacity:0.7;" onchange="guardarConfig()"></div>
                 </div>
             </div>
         </div>
@@ -1341,7 +1344,7 @@
             actividades: [],
             habitos: [],
             rituales: RITUALES_DEFAULT,
-            config: { jornadaHoras: 8 },
+            config: { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 } },
             creencias: [
                 'Miedo al éxito',
                 'Miedo a la escasez',
@@ -2047,7 +2050,7 @@
                 + actividadesDirectas.reduce((sum, a) => sum + duracionAHoras(a.duracion, a.unidad || 'h'), 0)
                 + subtareasDelDia.reduce((sum, s) => sum + duracionAHoras(s.duracion || 0, s.unidad || 'min'), 0);
 
-            const jornada = getJornada();
+            const jornada = getJornada(fecha);
             const excedeJornada = totalHoras > jornada;
             let html = excedeJornada
                 ? `<div style="background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:0.75rem 1rem; margin-bottom:1rem; display:flex; align-items:flex-start; gap:0.6rem;">
@@ -2269,7 +2272,7 @@
                     if (!esMes) { html += `<div></div>`; continue; }
 
                     const horas = calcularHorasDia(dia);
-                    const jornadaM = getJornada();
+                    const jornadaM = getJornada(dia);
                     const excedeM = horas > jornadaM;
                     const intensidad = Math.min(horas / jornadaM, 1);
                     let bg, fg, border;
@@ -2434,7 +2437,7 @@
                     })
                 ].sort((a, b) => a._min - b._min);
 
-                const jornada = getJornada();
+                const jornada = getJornada(fechaDia);
                 const excedeS = totalHoras > jornada;
                 html += `<div class="week-day-column" style="${esHoy ? 'background:#EDE7F6;' : ''}${excedeS ? 'border:2px solid #ef9a9a;' : ''}">
                     <div class="week-day-header" style="${excedeS ? 'color:#c62828;' : ''}">${dias[i]}<br><small style="font-weight:400;">${fechaLabel}</small></div>
@@ -2843,23 +2846,31 @@
                     datosParseados.rituales = RITUALES_DEFAULT;
                 }
                 if (!datosParseados.config) {
-                    datosParseados.config = { jornadaHoras: 8 };
+                    datosParseados.config = { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 } };
+                } else if (typeof datosParseados.config.jornadaHoras === 'number') {
+                    const v = datosParseados.config.jornadaHoras;
+                    datosParseados.config.jornadaHoras = { 0: v, 1: v, 2: v, 3: v, 4: v, 5: v, 6: v };
                 }
                 Object.assign(appData, datosParseados);
             }
         }
 
-        function getJornada() {
-            return (appData.config && appData.config.jornadaHoras) ? Number(appData.config.jornadaHoras) : 8;
+        function getJornada(fechaDia) {
+            const diaValor = fechaDia ? fechaDia.getDay() : new Date().getDay();
+            const j = appData.config?.jornadaHoras;
+            if (j && typeof j === 'object') return Number(j[diaValor] ?? 0);
+            return Number(j || 8);
         }
 
         function guardarConfig() {
-            const val = parseInt(document.getElementById('jornadaHorasInput').value);
-            if (!isNaN(val) && val >= 1 && val <= 24) {
-                appData.config.jornadaHoras = val;
-                guardarDatos();
-                renderizarAgenda();
-            }
+            const jornadas = {};
+            [0, 1, 2, 3, 4, 5, 6].forEach(d => {
+                const val = parseInt(document.getElementById(`jornada${d}`)?.value) || 0;
+                jornadas[d] = Math.min(24, Math.max(0, val));
+            });
+            appData.config.jornadaHoras = jornadas;
+            guardarDatos();
+            renderizarAgenda();
         }
 
         function renderizarTodo() {
@@ -2871,8 +2882,11 @@
             if (vistaHabitosActual === 'dashboard') renderizarDashboardHabitos();
             renderizarRituales();
             renderizarCreencias();
-            const inp = document.getElementById('jornadaHorasInput');
-            if (inp) inp.value = getJornada();
+            const j = appData.config?.jornadaHoras || {};
+            [0, 1, 2, 3, 4, 5, 6].forEach(d => {
+                const inp = document.getElementById(`jornada${d}`);
+                if (inp) inp.value = (typeof j === 'object' ? (j[d] ?? 0) : (j || 8));
+            });
         }
 
         init();
