@@ -699,6 +699,18 @@
                 <h2 class="card-title">📆 Esta Semana</h2>
                 <div id="listaEstaSemana"></div>
             </div>
+
+            <div class="card">
+                <h2 class="card-title">⚙️ Configuración</h2>
+                <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+                    <label style="font-weight:600; color:var(--purple);">Horas jornada de trabajo:</label>
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <input type="number" id="jornadaHorasInput" min="1" max="24" class="form-input" style="width:80px; text-align:center;" onchange="guardarConfig()">
+                        <span style="color:#666; font-size:0.9rem;">h/día</span>
+                    </div>
+                    <span style="font-size:0.82rem; color:#888;">La agenda marcará en rojo los días que superen este límite.</span>
+                </div>
+            </div>
         </div>
 
         <!-- PROYECTOS -->
@@ -984,6 +996,7 @@
                     <button type="button" class="btn btn-secondary btn-small" id="btnAgregarSubtarea" onclick="mostrarFormSubtarea()">+ Subtarea</button>
                 </div>
 
+                <div id="actividadError" style="display:none; background:#ffebee; border:1px solid #ef9a9a; border-radius:8px; padding:0.75rem; margin-bottom:0.75rem; color:#c62828; font-size:0.88rem; line-height:1.5;"></div>
                 <button type="submit" class="btn btn-primary">Guardar</button>
             </form>
         </div>
@@ -1185,6 +1198,20 @@
         </div>
     </div>
 
+    <!-- Modal Ver Ritual -->
+    <div id="modalVerRitual" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="verRitualTitulo">Ritual SER</h2>
+                <button class="btn-close" onclick="cerrarVerRitual()">✕</button>
+            </div>
+            <div id="verRitualContenido"></div>
+            <div style="margin-top:1.5rem; text-align:center;">
+                <button class="btn btn-primary" onclick="cerrarVerRitual()">✓ Listo, ejecutar actividad</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // RITUALES POR DEFECTO (pre-cargados para todas las usuarias)
         const RITUALES_DEFAULT = [
@@ -1314,6 +1341,7 @@
             actividades: [],
             habitos: [],
             rituales: RITUALES_DEFAULT,
+            config: { jornadaHoras: 8 },
             creencias: [
                 'Miedo al éxito',
                 'Miedo a la escasez',
@@ -1628,7 +1656,36 @@
         function guardarActividad(e) {
             e.preventDefault();
 
+            const errDiv = document.getElementById('actividadError');
+            errDiv.style.display = 'none';
+
             const id = document.getElementById('actividadId').value;
+            const duracion = parseFloat(document.getElementById('actividadDuracion').value) || 0;
+            const unidad = document.getElementById('actividadUnidad').value;
+
+            // Validar coherencia de tiempos si hay subtareas con duración definida
+            if (subtareasTemp.length > 0 && duracion > 0) {
+                const subsConDuracion = subtareasTemp.filter(s => s.duracion > 0);
+                if (subsConDuracion.length > 0) {
+                    const totalSub = subtareasTemp.reduce((sum, s) => sum + duracionAHoras(s.duracion || 0, s.unidad || 'min'), 0);
+                    const totalAct = duracionAHoras(duracion, unidad);
+                    const diff = totalSub - totalAct;
+                    if (Math.abs(diff) > 0.01) {
+                        const diffMin = Math.round(Math.abs(diff) * 60);
+                        const diffH = Math.floor(diffMin / 60);
+                        const diffM = diffMin % 60;
+                        const diffTexto = diffH > 0 ? `${diffH}h ${diffM > 0 ? diffM + 'min' : ''}`.trim() : `${diffM}min`;
+                        const msg = diff > 0
+                            ? `Las subtareas exceden ${diffTexto} el tiempo de la actividad principal.`
+                            : `Falta asignar ${diffTexto} en subtareas para igualar el tiempo de la actividad principal.`;
+                        errDiv.innerHTML = `<strong>⚠️ No se puede guardar la actividad:</strong> no coinciden los tiempos de la actividad principal con los de las subactividades.<br>${msg}`;
+                        errDiv.style.display = 'block';
+                        errDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        return;
+                    }
+                }
+            }
+
             const ritualActVal = document.getElementById('actividadRitual').value;
             const actividad = {
                 id: id ? parseInt(id) : Date.now(),
@@ -1636,8 +1693,8 @@
                 nombre: document.getElementById('actividadNombre').value,
                 creencia: document.getElementById('actividadCreencia').value,
                 fecha: document.getElementById('actividadFecha').value,
-                duracion: parseFloat(document.getElementById('actividadDuracion').value),
-                unidad: document.getElementById('actividadUnidad').value,
+                duracion,
+                unidad,
                 prioridad: document.getElementById('actividadPrioridad').value,
                 ritualId: ritualActVal ? parseInt(ritualActVal) : null,
                 limitacion: document.getElementById('actividadLimitacion').value,
@@ -1987,9 +2044,20 @@
             });
 
             const totalHoras = habitosDelDia.reduce((sum, h) => sum + duracionAHoras(h.duracion, h.unidad || 'min'), 0)
-                + actividadesDirectas.reduce((sum, a) => sum + duracionAHoras(a.duracion, a.unidad || 'h'), 0);
+                + actividadesDirectas.reduce((sum, a) => sum + duracionAHoras(a.duracion, a.unidad || 'h'), 0)
+                + subtareasDelDia.reduce((sum, s) => sum + duracionAHoras(s.duracion || 0, s.unidad || 'min'), 0);
 
-            let html = `<h3 style="color: var(--purple); margin-bottom: 1rem;">Total: ${totalHoras.toFixed(1)} horas</h3>`;
+            const jornada = getJornada();
+            const excedeJornada = totalHoras > jornada;
+            let html = excedeJornada
+                ? `<div style="background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:0.75rem 1rem; margin-bottom:1rem; display:flex; align-items:flex-start; gap:0.6rem;">
+                        <span style="font-size:1.2rem; line-height:1.3;">⚠️</span>
+                        <div>
+                            <strong style="color:#c62828;">Revisa y reagenda actividades, exceden tu jornada</strong>
+                            <div style="font-size:0.85rem; color:#c62828; margin-top:2px;">${totalHoras.toFixed(1)}h planificadas · Jornada: ${jornada}h · Exceso: ${(totalHoras - jornada).toFixed(1)}h</div>
+                        </div>
+                   </div>`
+                : `<h3 style="color: var(--purple); margin-bottom: 1rem;">Total: ${totalHoras.toFixed(1)} horas</h3>`;
 
             const items = [
                 ...habitosDelDia.map(h => ({ ...h, _tipo: 'habito', _min: getMinutosDelDia(h.hora) })),
@@ -2070,7 +2138,7 @@
                     const ritualActPanel = ritualAct && ritualAct.frases ? `<div id="${rAEid}" style="display:none; margin-top:0.5rem; padding:0.75rem; background:var(--lavender-light); border-radius:8px; font-size:0.85rem;">${ritualAct.frases.map((f,i)=>`<p style="margin-bottom:0.4rem;"><strong style="color:var(--purple);font-size:0.78rem;">${['Seguridad Corporal','Gestión de la Emoción','Cambio de Lenguaje para Avanzar','Reprogramación','Acción'][i]}:</strong><br>${f}</p>`).join('')}</div>` : '';
                     const subtareasMismaFecha = (a.subtareas || []).filter(s => !s.fechaPropia);
                     return `
-                        <div class="task-item ${atrasado ? 'atrasada' : ''} ${a.completada ? 'completada' : ''}">
+                        <div class="task-item ${atrasado ? 'atrasada' : ''} ${a.completada ? 'completada' : ''}" ${ritualAct ? `onclick="verRitualModal(${a.ritualId})" style="cursor:pointer;"` : ''}>
                             <div style="display:flex; justify-content:space-between; align-items:start; gap:0.5rem;">
                                 <div style="flex:1;">
                                     <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.25rem;">
@@ -2087,7 +2155,7 @@
                                     ${subtareasMismaFecha.length > 0 ? `
                                         <div style="margin-top:0.5rem;">
                                             ${subtareasMismaFecha.map(s => `
-                                                <div style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0.5rem; background:white; border-radius:6px; margin-bottom:0.25rem; font-size:0.85rem; cursor:pointer;" onclick="toggleSubtarea(${a.id}, ${s.id})">
+                                                <div style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0.5rem; background:white; border-radius:6px; margin-bottom:0.25rem; font-size:0.85rem; cursor:pointer;" onclick="event.stopPropagation(); toggleSubtarea(${a.id}, ${s.id})">
                                                     <span style="color:${s.completada ? 'var(--green)' : '#aaa'}; font-size:1rem;">${s.completada ? '☑' : '☐'}</span>
                                                     <span style="${s.completada ? 'text-decoration:line-through; color:#999;' : ''}">${s.nombre}</span>
                                                 </div>`).join('')}
@@ -2095,10 +2163,10 @@
                                 </div>
                             </div>
                             <div class="task-actions" style="margin-top:0.5rem;">
-                                <button class="btn btn-small ${a.completada ? 'btn-secondary' : 'btn-primary'}" onclick="toggleCompletada(${a.id})">
+                                <button class="btn btn-small ${a.completada ? 'btn-secondary' : 'btn-primary'}" onclick="event.stopPropagation(); toggleCompletada(${a.id})">
                                     ${a.completada ? 'Reabrir' : 'Completar'}
                                 </button>
-                                <button class="btn btn-edit btn-small" onclick="abrirModalActividad(${a.id})">Editar</button>
+                                <button class="btn btn-edit btn-small" onclick="event.stopPropagation(); abrirModalActividad(${a.id})">Editar</button>
                             </div>
                             ${ritualActPanel}
                         </div>`;
@@ -2122,10 +2190,25 @@
                 if (h.frecuencia === 'mensual') return fechaDia.getDate() === inicio.getDate();
                 return false;
             }).reduce((s, h) => s + duracionAHoras(h.duracion, h.unidad || 'min'), 0);
-            const hActividades = appData.actividades.filter(a =>
-                new Date(a.fecha).toDateString() === fechaDia.toDateString()
-            ).reduce((s, a) => s + duracionAHoras(a.duracion, a.unidad || 'h'), 0);
-            return hHabitos + hActividades;
+
+            // Solo actividades que se muestran como ítem propio (misma lógica que vista diaria)
+            const hActividades = appData.actividades.filter(a => {
+                if (new Date(a.fecha).toDateString() !== fechaDia.toDateString()) return false;
+                const todasConFecha = a.subtareas && a.subtareas.length > 0 && a.subtareas.every(s => s.fechaPropia && s.fecha);
+                return !todasConFecha;
+            }).reduce((s, a) => s + duracionAHoras(a.duracion, a.unidad || 'h'), 0);
+
+            // Subtareas con fecha propia que caen este día
+            let hSubtareas = 0;
+            appData.actividades.forEach(a => {
+                (a.subtareas || []).forEach(s => {
+                    if (s.fechaPropia && s.fecha && new Date(s.fecha).toDateString() === fechaDia.toDateString()) {
+                        hSubtareas += duracionAHoras(s.duracion || 0, s.unidad || 'min');
+                    }
+                });
+            });
+
+            return hHabitos + hActividades + hSubtareas;
         }
 
         function toggleDiaMes(fechaStr) {
@@ -2186,10 +2269,14 @@
                     if (!esMes) { html += `<div></div>`; continue; }
 
                     const horas = calcularHorasDia(dia);
-                    const intensidad = Math.min(horas / 8, 1);
+                    const jornadaM = getJornada();
+                    const excedeM = horas > jornadaM;
+                    const intensidad = Math.min(horas / jornadaM, 1);
                     let bg, fg, border;
                     if (esSel) {
-                        bg = 'var(--gold)'; fg = 'white'; border = 'var(--gold)';
+                        bg = 'var(--gold)'; fg = 'white'; border = excedeM ? '#ef9a9a' : 'var(--gold)';
+                    } else if (excedeM) {
+                        bg = '#ffcdd2'; fg = '#c62828'; border = '#ef9a9a';
                     } else if (esHoy) {
                         bg = 'var(--purple)'; fg = 'white'; border = 'var(--purple)';
                     } else if (horas === 0) {
@@ -2248,6 +2335,41 @@
             if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
         }
 
+        function verRitualModal(ritualId) {
+            const ritual = appData.rituales.find(r => r.id === ritualId);
+            if (!ritual) return;
+            const categorias = ['Seguridad Corporal','Gestión de la Emoción','Cambio de Lenguaje para Avanzar','Reprogramación','Acción'];
+            const color = getRitualColor(ritualId);
+            document.getElementById('verRitualTitulo').textContent = `${ritual.numero} — ${ritual.nombre}`;
+
+            const infoZonas = (ritual.zonaTension || ritual.zonaRegulacion) ? `
+                <div style="display:flex; gap:0.75rem; margin-bottom:1.25rem; flex-wrap:wrap;">
+                    ${ritual.zonaTension ? `
+                        <div style="flex:1; min-width:140px; background:#FFF8E1; border-radius:10px; padding:0.75rem; border-left:4px solid var(--gold);">
+                            <div style="font-size:0.68rem; font-weight:700; color:#9a7000; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.3rem;">🫀 Zona del cuerpo</div>
+                            <div style="font-size:0.9rem; font-weight:500;">${ritual.zonaTension}</div>
+                        </div>` : ''}
+                    ${ritual.zonaRegulacion ? `
+                        <div style="flex:1; min-width:140px; background:#F3E5F5; border-radius:10px; padding:0.75rem; border-left:4px solid ${color};">
+                            <div style="font-size:0.68rem; font-weight:700; color:var(--purple); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.3rem;">✋ Punto de regulación</div>
+                            <div style="font-size:0.9rem; font-weight:500;">${ritual.zonaRegulacion}</div>
+                        </div>` : ''}
+                </div>` : '';
+
+            document.getElementById('verRitualContenido').innerHTML = infoZonas + (ritual.frases
+                ? ritual.frases.map((f, i) => `
+                    <div style="margin-bottom:0.9rem; padding:0.85rem; background:var(--lavender-light); border-radius:10px; border-left:4px solid ${color};">
+                        <div style="font-size:0.72rem; font-weight:700; color:var(--purple); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.35rem;">${categorias[i]}</div>
+                        <div style="font-size:0.95rem; line-height:1.5;">${f}</div>
+                    </div>`).join('')
+                : '<p style="color:#666;">Este ritual no tiene frases definidas aún.</p>');
+            document.getElementById('modalVerRitual').classList.add('active');
+        }
+
+        function cerrarVerRitual() {
+            document.getElementById('modalVerRitual').classList.remove('active');
+        }
+
         function renderizarAgendaSemana(contenedor) {
             const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
             const diasValores = [1, 2, 3, 4, 5, 6, 0];
@@ -2297,7 +2419,8 @@
                 });
 
                 const totalHoras = habitosDia.reduce((s, h) => s + duracionAHoras(h.duracion, h.unidad || 'min'), 0)
-                    + actividadesDia.reduce((s, a) => s + duracionAHoras(a.duracion, a.unidad || 'h'), 0);
+                    + actividadesDia.reduce((s, a) => s + duracionAHoras(a.duracion, a.unidad || 'h'), 0)
+                    + subtareasDia.reduce((s, sub) => s + duracionAHoras(sub.duracion || 0, sub.unidad || 'min'), 0);
 
                 const fechaLabel = fechaDia.toLocaleDateString('es-CL', {day:'2-digit', month:'2-digit'});
 
@@ -2311,9 +2434,12 @@
                     })
                 ].sort((a, b) => a._min - b._min);
 
-                html += `<div class="week-day-column" ${esHoy ? 'style="background:#EDE7F6;"' : ''}>
-                    <div class="week-day-header">${dias[i]}<br><small style="font-weight:400;">${fechaLabel}</small></div>
-                    <div class="week-day-total">${totalHoras.toFixed(1)}h</div>
+                const jornada = getJornada();
+                const excedeS = totalHoras > jornada;
+                html += `<div class="week-day-column" style="${esHoy ? 'background:#EDE7F6;' : ''}${excedeS ? 'border:2px solid #ef9a9a;' : ''}">
+                    <div class="week-day-header" style="${excedeS ? 'color:#c62828;' : ''}">${dias[i]}<br><small style="font-weight:400;">${fechaLabel}</small></div>
+                    <div class="week-day-total" style="${excedeS ? 'color:#c62828; font-weight:700;' : ''}">${totalHoras.toFixed(1)}h${excedeS ? ' ⚠️' : ''}</div>
+                    ${excedeS ? `<div style="font-size:0.58rem; color:#c62828; text-align:center; padding:2px 4px; background:#ffebee; border-radius:4px; margin-bottom:4px; line-height:1.3;">Revisa y reagenda, excede jornada</div>` : ''}
                     ${itemsDia.map(item => {
                         if (item._tipo === 'habito') {
                             const h = item;
@@ -2346,14 +2472,14 @@
                         const a = item;
                         const ritual = a.ritualId ? appData.rituales.find(r => r.id === a.ritualId) : null;
                         const ritualId = `wr-a-${a.id}-${fechaDiaStr}`;
-                        return `<div class="week-task-mini ${a.completada ? 'completada' : ''}" style="cursor:default;">
+                        return `<div class="week-task-mini ${a.completada ? 'completada' : ''}" style="${ritual ? 'cursor:pointer;' : 'cursor:default;'}" ${ritual ? `onclick="verRitualModal(${a.ritualId})"` : ''}>
                             <div style="display:flex; justify-content:space-between; align-items:center; gap:2px;">
-                                <span style="flex:1; overflow:hidden; ${ritual ? 'cursor:pointer;' : ''}" onclick="${ritual ? `toggleRitualWeek('${ritualId}')` : ''}" title="${ritual ? `Ritual N°${ritual.numero || ritual.nombre}` : ''}">📌 ${new Date(a.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})} ${a.nombre} (${duracionTexto(a.duracion, a.unidad||'h')}) ${a.completada ? '✓' : ''}</span>
-                                <button style="border:none; background:${a.completada ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:4px; padding:1px 4px; font-size:0.6rem; cursor:pointer; flex-shrink:0;" onclick="toggleCompletadaSemana(${a.id})">${a.completada ? '↩' : '✓'}</button>
+                                <span style="flex:1; overflow:hidden;">📌 ${new Date(a.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})} ${a.nombre} (${duracionTexto(a.duracion, a.unidad||'h')}) ${a.completada ? '✓' : ''}</span>
+                                <button style="border:none; background:${a.completada ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:4px; padding:1px 4px; font-size:0.6rem; cursor:pointer; flex-shrink:0;" onclick="event.stopPropagation(); toggleCompletadaSemana(${a.id})">${a.completada ? '↩' : '✓'}</button>
                             </div>
                             <div style="display:flex; gap:2px; margin-top:3px; justify-content:flex-end;">
-                                <button style="border:1px solid #ccc; background:white; border-radius:3px; padding:1px 5px; font-size:0.6rem; cursor:pointer;" onclick="moverActividad(${a.id},-1)" title="Mover al día anterior">←</button>
-                                <button style="border:1px solid #ccc; background:white; border-radius:3px; padding:1px 5px; font-size:0.6rem; cursor:pointer;" onclick="moverActividad(${a.id},1)" title="Mover al día siguiente">→</button>
+                                <button style="border:1px solid #ccc; background:white; border-radius:3px; padding:1px 5px; font-size:0.6rem; cursor:pointer;" onclick="event.stopPropagation(); moverActividad(${a.id},-1)" title="Mover al día anterior">←</button>
+                                <button style="border:1px solid #ccc; background:white; border-radius:3px; padding:1px 5px; font-size:0.6rem; cursor:pointer;" onclick="event.stopPropagation(); moverActividad(${a.id},1)" title="Mover al día siguiente">→</button>
                             </div>
                             ${ritual ? `<div id="${ritualId}" style="display:none; margin-top:4px; padding:4px; background:var(--lavender-light); border-radius:4px; font-size:0.62rem;">
                                 ${ritual.frases ? ritual.frases.map((f,i) => `<div style="margin-bottom:2px;"><strong style="color:var(--purple);">${i+1}.</strong> ${f}</div>`).join('') : ''}
@@ -2716,7 +2842,23 @@
                 if (!datosParseados.rituales || datosParseados.rituales.length === 0) {
                     datosParseados.rituales = RITUALES_DEFAULT;
                 }
+                if (!datosParseados.config) {
+                    datosParseados.config = { jornadaHoras: 8 };
+                }
                 Object.assign(appData, datosParseados);
+            }
+        }
+
+        function getJornada() {
+            return (appData.config && appData.config.jornadaHoras) ? Number(appData.config.jornadaHoras) : 8;
+        }
+
+        function guardarConfig() {
+            const val = parseInt(document.getElementById('jornadaHorasInput').value);
+            if (!isNaN(val) && val >= 1 && val <= 24) {
+                appData.config.jornadaHoras = val;
+                guardarDatos();
+                renderizarAgenda();
             }
         }
 
@@ -2729,6 +2871,8 @@
             if (vistaHabitosActual === 'dashboard') renderizarDashboardHabitos();
             renderizarRituales();
             renderizarCreencias();
+            const inp = document.getElementById('jornadaHorasInput');
+            if (inp) inp.value = getJornada();
         }
 
         init();
