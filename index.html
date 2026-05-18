@@ -775,6 +775,7 @@
                 <div class="agenda-controls">
                     <button class="toggle-btn active" onclick="cambiarVistaAgenda('dia')">Vista Diaria</button>
                     <button class="toggle-btn" onclick="cambiarVistaAgenda('semana')">Vista Semanal</button>
+                    <button class="toggle-btn" onclick="cambiarVistaAgenda('mes')">Vista Mensual</button>
                     <input type="date" id="fechaAgenda" class="date-selector" onchange="renderizarAgenda()">
                 </div>
                 <div id="agendaContenido"></div>
@@ -1328,6 +1329,7 @@
         };
 
         let vistaAgendaActual = 'dia';
+        let mesExpandidoDia = null;
 
         // INICIALIZACIÓN
         function init() {
@@ -1944,8 +1946,10 @@
 
             if (vistaAgendaActual === 'dia') {
                 renderizarAgendaDia(contenedor);
-            } else {
+            } else if (vistaAgendaActual === 'semana') {
                 renderizarAgendaSemana(contenedor);
+            } else {
+                renderizarAgendaMes(contenedor);
             }
         }
 
@@ -1955,8 +1959,7 @@
             return parseInt(parts[0]) * 60 + parseInt(parts[1]);
         }
 
-        function renderizarAgendaDia(contenedor) {
-            const fechaStr = document.getElementById('fechaAgenda').value;
+        function buildDiaItemsHTML(fechaStr) {
             const fecha = new Date(fechaStr + 'T00:00:00');
             const ahora = new Date();
 
@@ -1969,15 +1972,12 @@
                 return false;
             });
 
-            // Actividades con subtareas de fecha propia → no mostrar padre
             const actividadesDirectas = appData.actividades.filter(a => {
-                const actFecha = new Date(a.fecha);
-                if (actFecha.toDateString() !== fecha.toDateString()) return false;
-                // Si tiene subtareas con fecha propia, no mostrar el padre
-                return !(a.subtareas && a.subtareas.some(s => s.fechaPropia));
+                if (new Date(a.fecha).toDateString() !== fecha.toDateString()) return false;
+                const todasConFecha = a.subtareas && a.subtareas.length > 0 && a.subtareas.every(s => s.fechaPropia && s.fecha);
+                return !todasConFecha;
             });
 
-            // Subtareas con fecha propia que caen hoy
             const subtareasDelDia = [];
             appData.actividades.forEach(a => {
                 if (a.subtareas) {
@@ -1986,20 +1986,17 @@
                 }
             });
 
-            // Calcular total horas
             const totalHoras = habitosDelDia.reduce((sum, h) => sum + duracionAHoras(h.duracion, h.unidad || 'min'), 0)
                 + actividadesDirectas.reduce((sum, a) => sum + duracionAHoras(a.duracion, a.unidad || 'h'), 0);
 
             let html = `<h3 style="color: var(--purple); margin-bottom: 1rem;">Total: ${totalHoras.toFixed(1)} horas</h3>`;
 
-            // Combinar y ordenar todo cronológicamente
             const items = [
                 ...habitosDelDia.map(h => ({ ...h, _tipo: 'habito', _min: getMinutosDelDia(h.hora) })),
                 ...actividadesDirectas.map(a => ({ ...a, _tipo: 'actividad', _min: getMinutosDelDia(new Date(a.fecha).toTimeString().substring(0, 5)) })),
                 ...subtareasDelDia.map(s => ({ ...s, _tipo: 'subtarea', _min: getMinutosDelDia(s.fecha ? new Date(s.fecha).toTimeString().substring(0, 5) : null) }))
             ];
 
-            // Atrasados primero, luego por hora
             const esAtrasado = item => {
                 if (fecha.toDateString() !== ahora.toDateString()) return false;
                 if (item._tipo === 'habito') {
@@ -2025,13 +2022,16 @@
                         const h = item;
                         const completadoHoy = h.completados && h.completados[fechaStr];
                         const atrasado = esAtrasado(h);
-                        const ritualBadge = h.ritualId ? getRitualBadge(h.ritualId) : '';
+                        const ritual = h.ritualId ? appData.rituales.find(r => r.id === h.ritualId) : null;
+                        const rEid = `rd-h-${h.id}-${fechaStr.replace(/-/g,'')}`;
+                        const ritualBtn = ritual ? `<span class="ritual-badge" style="background:${getRitualColor(h.ritualId)}; cursor:pointer;" onclick="toggleRitualDia('${rEid}')">${ritual.numero || ritual.nombre}</span>` : '';
+                        const ritualPanel = ritual && ritual.frases ? `<div id="${rEid}" style="display:none; margin-top:0.5rem; padding:0.75rem; background:var(--lavender-light); border-radius:8px; font-size:0.85rem;">${ritual.frases.map((f,i)=>`<p style="margin-bottom:0.4rem;"><strong style="color:var(--purple);font-size:0.78rem;">${['Seguridad Corporal','Gestión de la Emoción','Cambio de Lenguaje para Avanzar','Reprogramación','Acción'][i]}:</strong><br>${f}</p>`).join('')}</div>` : '';
                         return `
                             <div class="task-item ${completadoHoy ? 'completada' : ''} ${atrasado ? 'atrasada' : ''}">
                                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
                                     <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                                         <span style="font-size:0.8rem; background:var(--gold); color:white; padding:2px 6px; border-radius:4px;">⚡ Hábito</span>
-                                        ${ritualBadge}
+                                        ${ritualBtn}
                                         ${completadoHoy ? '<span class="badge badge-green">✓</span>' : ''}
                                         <strong>${h.nombre}</strong>
                                         <span style="color:#666; font-size:0.85rem;">${h.hora} · ${duracionTexto(h.duracion, h.unidad || 'min')}</span>
@@ -2040,6 +2040,7 @@
                                         ${completadoHoy ? 'Reabrir' : 'Completar'}
                                     </button>
                                 </div>
+                                ${ritualPanel}
                             </div>`;
                     }
                     if (item._tipo === 'subtarea') {
@@ -2049,9 +2050,8 @@
                             <div class="task-item ${s.completada ? 'completada' : ''}" style="border-left-color: #9c27b0;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
                                     <div>
-                                        <span style="font-size:0.75rem; color:#666;">↳ ${s._actividadNombre}</span><br>
                                         ${s.completada ? '<span class="badge badge-green">✓</span>' : ''}
-                                        <strong>${s.nombre}</strong>
+                                        <strong>${s._actividadNombre} - ${s.nombre}</strong>
                                         ${hora ? `<span style="color:#666; font-size:0.85rem;"> · ${hora}</span>` : ''}
                                         ${s.duracion ? `<span style="color:#666; font-size:0.85rem;"> · ${duracionTexto(s.duracion, s.unidad||'min')}</span>` : ''}
                                     </div>
@@ -2061,11 +2061,13 @@
                                 </div>
                             </div>`;
                     }
-                    // actividad
                     const a = item;
                     const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
                     const atrasado = esAtrasado(a);
-                    const ritualBadge = a.ritualId ? getRitualBadge(a.ritualId) : '';
+                    const ritualAct = a.ritualId ? appData.rituales.find(r => r.id === a.ritualId) : null;
+                    const rAEid = `rd-a-${a.id}-${fechaStr.replace(/-/g,'')}`;
+                    const ritualBadge = ritualAct ? `<span class="ritual-badge" style="background:${getRitualColor(a.ritualId)}; cursor:pointer;" onclick="toggleRitualDia('${rAEid}')">${ritualAct.numero || ritualAct.nombre}</span>` : '';
+                    const ritualActPanel = ritualAct && ritualAct.frases ? `<div id="${rAEid}" style="display:none; margin-top:0.5rem; padding:0.75rem; background:var(--lavender-light); border-radius:8px; font-size:0.85rem;">${ritualAct.frases.map((f,i)=>`<p style="margin-bottom:0.4rem;"><strong style="color:var(--purple);font-size:0.78rem;">${['Seguridad Corporal','Gestión de la Emoción','Cambio de Lenguaje para Avanzar','Reprogramación','Acción'][i]}:</strong><br>${f}</p>`).join('')}</div>` : '';
                     const subtareasMismaFecha = (a.subtareas || []).filter(s => !s.fechaPropia);
                     return `
                         <div class="task-item ${atrasado ? 'atrasada' : ''} ${a.completada ? 'completada' : ''}">
@@ -2098,8 +2100,129 @@
                                 </button>
                                 <button class="btn btn-edit btn-small" onclick="abrirModalActividad(${a.id})">Editar</button>
                             </div>
+                            ${ritualActPanel}
                         </div>`;
                 }).join('');
+            }
+            return html;
+        }
+
+        function renderizarAgendaDia(contenedor) {
+            const fechaStr = document.getElementById('fechaAgenda').value;
+            contenedor.innerHTML = buildDiaItemsHTML(fechaStr);
+        }
+
+        function calcularHorasDia(fechaDia) {
+            const diaValor = fechaDia.getDay();
+            const hHabitos = appData.habitos.filter(h => {
+                const inicio = new Date(h.fechaInicio + 'T00:00:00');
+                if (fechaDia < inicio) return false;
+                if (h.frecuencia === 'diaria') return true;
+                if (h.frecuencia === 'semanal') return h.diasSemana.includes(diaValor);
+                if (h.frecuencia === 'mensual') return fechaDia.getDate() === inicio.getDate();
+                return false;
+            }).reduce((s, h) => s + duracionAHoras(h.duracion, h.unidad || 'min'), 0);
+            const hActividades = appData.actividades.filter(a =>
+                new Date(a.fecha).toDateString() === fechaDia.toDateString()
+            ).reduce((s, a) => s + duracionAHoras(a.duracion, a.unidad || 'h'), 0);
+            return hHabitos + hActividades;
+        }
+
+        function toggleDiaMes(fechaStr) {
+            mesExpandidoDia = mesExpandidoDia === fechaStr ? null : fechaStr;
+            renderizarAgenda();
+        }
+
+        function navegarMes(delta) {
+            const fechaStr = document.getElementById('fechaAgenda').value;
+            const ref = new Date(fechaStr + 'T00:00:00');
+            ref.setMonth(ref.getMonth() + delta);
+            document.getElementById('fechaAgenda').value = ref.toISOString().split('T')[0];
+            mesExpandidoDia = null;
+            renderizarAgenda();
+        }
+
+        function renderizarAgendaMes(contenedor) {
+            const fechaStr = document.getElementById('fechaAgenda').value;
+            const ref = new Date(fechaStr + 'T00:00:00');
+            const año = ref.getFullYear();
+            const mes = ref.getMonth();
+            const nombresMes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            const diasNombre = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+            const primerDia = new Date(año, mes, 1);
+            const offsetLunes = primerDia.getDay() === 0 ? -6 : 1 - primerDia.getDay();
+            const startDay = new Date(primerDia);
+            startDay.setDate(primerDia.getDate() + offsetLunes);
+            const hoy = new Date();
+
+            let html = `
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+                    <button class="btn btn-secondary btn-small" onclick="navegarMes(-1)">‹ Anterior</button>
+                    <strong style="color:var(--purple); font-size:1.05rem;">${nombresMes[mes]} ${año}</strong>
+                    <button class="btn btn-secondary btn-small" onclick="navegarMes(1)">Siguiente ›</button>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:1rem;">
+                    ${diasNombre.map(d => `<div style="text-align:center; font-size:0.68rem; font-weight:700; color:var(--purple); padding:3px 0;">${d}</div>`).join('')}
+            `;
+
+            for (let w = 0; w < 6; w++) {
+                let tieneDelMes = false;
+                for (let d = 0; d < 7; d++) {
+                    const dia = new Date(startDay);
+                    dia.setDate(startDay.getDate() + w * 7 + d);
+                    if (dia.getMonth() === mes) { tieneDelMes = true; break; }
+                }
+                if (!tieneDelMes) break;
+
+                for (let d = 0; d < 7; d++) {
+                    const dia = new Date(startDay);
+                    dia.setDate(startDay.getDate() + w * 7 + d);
+                    const esMes = dia.getMonth() === mes;
+                    const diaStr = dia.toISOString().split('T')[0];
+                    const esHoy = dia.toDateString() === hoy.toDateString();
+                    const esSel = diaStr === mesExpandidoDia;
+
+                    if (!esMes) { html += `<div></div>`; continue; }
+
+                    const horas = calcularHorasDia(dia);
+                    const intensidad = Math.min(horas / 8, 1);
+                    let bg, fg, border;
+                    if (esSel) {
+                        bg = 'var(--gold)'; fg = 'white'; border = 'var(--gold)';
+                    } else if (esHoy) {
+                        bg = 'var(--purple)'; fg = 'white'; border = 'var(--purple)';
+                    } else if (horas === 0) {
+                        bg = '#f0f0f0'; fg = '#aaa'; border = 'transparent';
+                    } else {
+                        const alpha = (0.15 + intensidad * 0.65).toFixed(2);
+                        bg = `rgba(75,22,142,${alpha})`; fg = intensidad > 0.55 ? 'white' : '#2D2D2D'; border = 'transparent';
+                    }
+
+                    html += `<div onclick="toggleDiaMes('${diaStr}')" style="
+                        border-radius:8px; padding:5px 2px; text-align:center; cursor:pointer;
+                        background:${bg}; color:${fg}; border:2px solid ${border};
+                        min-height:44px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+                    ">
+                        <div style="font-size:0.88rem; font-weight:${esHoy ? '700' : '500'}; line-height:1;">${dia.getDate()}</div>
+                        <div style="font-size:0.6rem; opacity:0.9; line-height:1;">${horas > 0 ? horas.toFixed(1)+'h' : '·'}</div>
+                    </div>`;
+                }
+            }
+
+            html += '</div>';
+
+            if (mesExpandidoDia) {
+                const fechaExp = new Date(mesExpandidoDia + 'T00:00:00');
+                const labelDia = fechaExp.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long' });
+                html += `
+                    <div style="background:white; border-radius:12px; padding:1rem; border:2px solid var(--gold);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                            <strong style="color:var(--purple); text-transform:capitalize;">${labelDia}</strong>
+                            <button onclick="toggleDiaMes('${mesExpandidoDia}')" style="border:none; background:none; font-size:1.1rem; cursor:pointer; color:#999; line-height:1;">✕</button>
+                        </div>
+                        ${buildDiaItemsHTML(mesExpandidoDia)}
+                    </div>`;
             }
 
             contenedor.innerHTML = html;
@@ -2116,6 +2239,11 @@
         }
 
         function toggleRitualWeek(elemId) {
+            const el = document.getElementById(elemId);
+            if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleRitualDia(elemId) {
             const el = document.getElementById(elemId);
             if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
         }
@@ -2149,14 +2277,23 @@
                 });
 
                 const actividadesDia = appData.actividades.filter(a => {
-                    if (a.subtareas && a.subtareas.some(s => s.fechaPropia)) return false;
-                    return new Date(a.fecha).toDateString() === fechaDia.toDateString();
+                    if (new Date(a.fecha).toDateString() !== fechaDia.toDateString()) return false;
+                    if (!a.subtareas || a.subtareas.length === 0) return true;
+                    // Ocultar padre si alguna subtarea cae hoy (se muestran como items propios)
+                    return !a.subtareas.some(s => {
+                        const fd = (s.fechaPropia && s.fecha) ? new Date(s.fecha) : new Date(a.fecha);
+                        return fd.toDateString() === fechaDia.toDateString();
+                    });
                 });
 
                 const subtareasDia = [];
                 appData.actividades.forEach(a => {
-                    (a.subtareas || []).filter(s => s.fechaPropia && s.fecha && new Date(s.fecha).toDateString() === fechaDia.toDateString())
-                        .forEach(s => subtareasDia.push({ ...s, _actividadId: a.id, _actividadNombre: a.nombre }));
+                    (a.subtareas || []).forEach(s => {
+                        const fd = (s.fechaPropia && s.fecha) ? new Date(s.fecha) : new Date(a.fecha);
+                        if (fd.toDateString() === fechaDia.toDateString()) {
+                            subtareasDia.push({ ...s, _actividadId: a.id, _actividadNombre: a.nombre, _fechaParent: a.fecha });
+                        }
+                    });
                 });
 
                 const totalHoras = habitosDia.reduce((s, h) => s + duracionAHoras(h.duracion, h.unidad || 'min'), 0)
@@ -2168,7 +2305,10 @@
                 const itemsDia = [
                     ...habitosDia.map(h => ({ ...h, _tipo:'habito', _min: getMinutosDelDia(h.hora) })),
                     ...actividadesDia.map(a => ({ ...a, _tipo:'actividad', _min: getMinutosDelDia(new Date(a.fecha).toTimeString().substring(0,5)) })),
-                    ...subtareasDia.map(s => ({ ...s, _tipo:'subtarea', _min: getMinutosDelDia(s.fecha ? new Date(s.fecha).toTimeString().substring(0,5) : null) }))
+                    ...subtareasDia.map(s => {
+                        const fRef = (s.fechaPropia && s.fecha) ? new Date(s.fecha) : new Date(s._fechaParent);
+                        return { ...s, _tipo:'subtarea', _min: getMinutosDelDia(fRef.toTimeString().substring(0,5)) };
+                    })
                 ].sort((a, b) => a._min - b._min);
 
                 html += `<div class="week-day-column" ${esHoy ? 'style="background:#EDE7F6;"' : ''}>
@@ -2183,7 +2323,7 @@
                             const ritualId = `wr-${h.id}-${fechaDiaStr}`;
                             return `<div class="week-task-mini ${completado ? 'completada' : ''}" style="border-left-color:${color}; cursor:default;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; gap:2px;">
-                                    <span style="flex:1; overflow:hidden;" onclick="toggleRitualWeek('${ritualId}')" title="Ver ritual">⚡ ${h.hora} ${h.nombre} (${duracionTexto(h.duracion, h.unidad||'min')}) ${completado ? '✓' : ''}</span>
+                                    <span style="flex:1; overflow:hidden; ${ritual ? 'cursor:pointer;' : ''}" onclick="${ritual ? `toggleRitualWeek('${ritualId}')` : ''}" title="${ritual ? `Ritual N°${ritual.numero || ritual.nombre}` : ''}">⚡ ${h.hora} ${h.nombre} (${duracionTexto(h.duracion, h.unidad||'min')}) ${completado ? '✓' : ''}</span>
                                     <button style="border:none; background:${completado ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:4px; padding:1px 4px; font-size:0.6rem; cursor:pointer; flex-shrink:0;" onclick="toggleHabitoCompletado(${h.id},'${fechaDiaStr}')">${completado ? '↩' : '✓'}</button>
                                 </div>
                                 ${ritual ? `<div id="${ritualId}" style="display:none; margin-top:4px; padding:4px; background:var(--lavender-light); border-radius:4px; font-size:0.62rem;">
@@ -2193,9 +2333,13 @@
                         }
                         if (item._tipo === 'subtarea') {
                             const s = item;
-                            const hora = s.fecha ? new Date(s.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) : '';
-                            return `<div class="week-task-mini ${s.completada ? 'completada' : ''}" style="border-left-color:#9c27b0; cursor:pointer;" onclick="toggleSubtarea(${s._actividadId},${s.id})">
-                                ↳ ${hora} ${s.nombre} ${s.completada ? '✓' : ''}
+                            const fRef = (s.fechaPropia && s.fecha) ? new Date(s.fecha) : new Date(s._fechaParent);
+                            const hora = fRef.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+                            return `<div class="week-task-mini ${s.completada ? 'completada' : ''}" style="border-left-color:#9c27b0; cursor:default;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:2px;">
+                                    <span style="flex:1; overflow:hidden;">📎 ${hora} ${s._actividadNombre} - ${s.nombre}</span>
+                                    <button style="border:none; background:${s.completada ? 'var(--green)' : '#9c27b0'}; color:white; border-radius:4px; padding:1px 4px; font-size:0.6rem; cursor:pointer; flex-shrink:0;" onclick="toggleSubtarea(${s._actividadId},${s.id})">${s.completada ? '↩' : '✓'}</button>
+                                </div>
                             </div>`;
                         }
                         // actividad
@@ -2204,7 +2348,7 @@
                         const ritualId = `wr-a-${a.id}-${fechaDiaStr}`;
                         return `<div class="week-task-mini ${a.completada ? 'completada' : ''}" style="cursor:default;">
                             <div style="display:flex; justify-content:space-between; align-items:center; gap:2px;">
-                                <span style="flex:1; overflow:hidden;" onclick="${ritual ? `toggleRitualWeek('${ritualId}')` : ''}"  title="${ritual ? 'Ver ritual' : ''}">📌 ${new Date(a.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})} ${a.nombre} (${duracionTexto(a.duracion, a.unidad||'h')}) ${a.completada ? '✓' : ''}</span>
+                                <span style="flex:1; overflow:hidden; ${ritual ? 'cursor:pointer;' : ''}" onclick="${ritual ? `toggleRitualWeek('${ritualId}')` : ''}" title="${ritual ? `Ritual N°${ritual.numero || ritual.nombre}` : ''}">📌 ${new Date(a.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})} ${a.nombre} (${duracionTexto(a.duracion, a.unidad||'h')}) ${a.completada ? '✓' : ''}</span>
                                 <button style="border:none; background:${a.completada ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:4px; padding:1px 4px; font-size:0.6rem; cursor:pointer; flex-shrink:0;" onclick="toggleCompletadaSemana(${a.id})">${a.completada ? '↩' : '✓'}</button>
                             </div>
                             <div style="display:flex; gap:2px; margin-top:3px; justify-content:flex-end;">
