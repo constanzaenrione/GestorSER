@@ -1604,6 +1604,31 @@
         }
 
         // PROYECTOS
+        function eliminarProyecto(id) {
+            const p = appData.proyectos.find(p => p.id === id);
+            if (!p) return;
+            const tieneActividades = appData.actividades.some(a => a.proyectoId === id);
+            const msg = tieneActividades
+                ? `¿Eliminar el proyecto "${p.nombre}"? También se eliminarán todas sus actividades.`
+                : `¿Eliminar el proyecto "${p.nombre}"?`;
+            if (!confirm(msg)) return;
+            appData.proyectos = appData.proyectos.filter(p => p.id !== id);
+            if (tieneActividades) appData.actividades = appData.actividades.filter(a => a.proyectoId !== id);
+            guardarDatos();
+            renderizarProyectos();
+            renderizarTodasActividades();
+        }
+
+        function eliminarActividad(id) {
+            const a = appData.actividades.find(a => a.id === id);
+            if (!a) return;
+            if (!confirm(`¿Eliminar la actividad "${a.nombre}"?`)) return;
+            appData.actividades = appData.actividades.filter(a => a.id !== id);
+            guardarDatos();
+            renderizarTodasActividades();
+            renderizarAgenda();
+        }
+
         function guardarProyecto(e) {
             e.preventDefault();
             
@@ -1659,7 +1684,10 @@
                                 ${p.smart.especifica ? `<p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>E:</strong> ${p.smart.especifica}</p>` : ''}
                                 ${p.smart.medible ? `<p style="font-size: 0.85rem;"><strong>M:</strong> ${p.smart.medible}</p>` : ''}
                             </div>
-                            <button class="btn btn-edit btn-small" onclick="abrirModalProyecto(${p.id})">Editar</button>
+                            <div style="display:flex; gap:0.4rem;">
+                                <button class="btn btn-edit btn-small" onclick="abrirModalProyecto(${p.id})">Editar</button>
+                                <button class="btn btn-delete btn-small" onclick="eliminarProyecto(${p.id})">Eliminar</button>
+                            </div>
                         </div>
                         
                         ${actividades.length > 0 ? `
@@ -1842,6 +1870,7 @@
                                 ${a.completada ? 'Reabrir' : 'Completar'}
                             </button>
                             <button class="btn btn-edit btn-small" onclick="abrirModalActividad(${a.id})">Editar</button>
+                            <button class="btn btn-delete btn-small" onclick="eliminarActividad(${a.id})">Eliminar</button>
                         </div>
                     </div>
                 `;
