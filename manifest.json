@@ -1,6 +1,6 @@
 {
-  "name": "Gestor Proyectos SER",
-  "short_name": "Gestor SER",
+  "name": "Agenda SER",
+  "short_name": "Agenda SER",
   "description": "Gestiona tus proyectos, hábitos y rituales SER",
   "start_url": "/GestorSER/",
   "scope": "/GestorSER/",

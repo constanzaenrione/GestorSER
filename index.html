@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Gestor SER">
+    <meta name="apple-mobile-web-app-title" content="Agenda SER">
     <meta name="theme-color" content="#4B168E">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.svg">
-    <title>Gestor Proyectos SER</title>
+    <title>Agenda SER</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -660,7 +660,7 @@
                 <div class="logo">
                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%234B168E'/%3E%3Ctext x='50' y='60' font-size='40' fill='white' text-anchor='middle' font-weight='bold'%3ESER%3C/text%3E%3C/svg%3E" alt="Logo SER">
                 </div>
-                <h1>Gestor Proyectos SER</h1>
+                <h1>Agenda SER</h1>
             </div>
             <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
                 <a href="https://www.instagram.com/constanza.enrione" target="_blank" class="social-link">@constanza.enrione</a>
@@ -694,6 +694,11 @@
             <div class="card">
                 <h2 class="card-title">⚠️ Actividades Atrasadas</h2>
                 <div id="listaAtrasadas"></div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">📋 Por Agendar</h2>
+                <div id="listaSinAgendar"></div>
             </div>
 
             <div class="card">
@@ -936,8 +941,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Fecha y Hora *</label>
-                    <input type="datetime-local" class="form-input" id="actividadFecha" required>
+                    <label class="form-label">Fecha y Hora <span style="font-weight:400; color:#888; font-size:0.85rem;">(opcional — sin fecha queda en "Por agendar")</span></label>
+                    <input type="datetime-local" class="form-input" id="actividadFecha">
                 </div>
 
                 <div class="form-group">
@@ -1636,6 +1641,74 @@
         }
 
         // PROYECTOS
+        function calcularHoraSubtarea(actividad, idx) {
+            const base = new Date(actividad.fecha);
+            let offsetMin = 0;
+            for (let i = 0; i < idx; i++) {
+                const s = actividad.subtareas[i];
+                if (!s.fechaPropia && s.duracion) {
+                    offsetMin += duracionAHoras(s.duracion, s.unidad || 'min') * 60;
+                }
+            }
+            const resultado = new Date(base);
+            resultado.setMinutes(resultado.getMinutes() + offsetMin);
+            return resultado;
+        }
+
+        function diasSinAgendar(a) {
+            if (a.fecha) return 0;
+            const creado = a.creado ? new Date(a.creado) : new Date();
+            return Math.floor((Date.now() - creado.getTime()) / 86400000);
+        }
+
+        function colorSinAgendar(dias) {
+            if (dias >= 30) return { bg: '#FFEBEE', border: '#C62828', texto: '#C62828', label: `${dias}d sin agendar 🔴` };
+            if (dias >= 14) return { bg: '#FFF3E0', border: '#E65100', texto: '#E65100', label: `${dias}d sin agendar 🟠` };
+            if (dias >= 7)  return { bg: '#FFFDE7', border: '#F9A825', texto: '#F57F17', label: `${dias}d sin agendar 🟡` };
+            return { bg: 'white', border: 'var(--purple)', texto: '#888', label: dias === 0 ? 'Recién agregada' : `${dias}d sin agendar` };
+        }
+
+        function actividadEstaAtrasada(a) {
+            if (a.completada) return false;
+            if (!a.fecha) return false;
+            const ahora = new Date();
+            const subtareas = a.subtareas || [];
+            if (subtareas.length === 0) return new Date(a.fecha) < ahora;
+            // Subtareas con fecha propia: atrasada si alguna incompleta está vencida
+            const conFechaPropia = subtareas.filter(s => s.fechaPropia && s.fecha);
+            if (conFechaPropia.length > 0) {
+                return conFechaPropia.some(s => !s.completada && new Date(s.fecha) < ahora);
+            }
+            // Subtareas misma fecha: usar hora calculada automáticamente
+            const conDuracion = subtareas.filter(s => !s.fechaPropia && s.duracion);
+            if (conDuracion.length > 0) {
+                return subtareas.some((s, idx) => {
+                    if (s.fechaPropia || s.completada || !s.duracion) return false;
+                    const horaCalc = calcularHoraSubtarea(a, idx);
+                    const fin = new Date(horaCalc.getTime() + duracionAHoras(s.duracion, s.unidad || 'min') * 3600000);
+                    return fin < ahora;
+                });
+            }
+            return new Date(a.fecha) < ahora;
+        }
+
+        function agendarActividad(id) {
+            // Abre el modal de edición con la actividad pre-cargada, el campo fecha vacío para que el usuario lo complete
+            abrirModalActividad(id);
+            // Limpiar el campo de fecha para que el usuario elija
+            setTimeout(() => {
+                const campoFecha = document.getElementById('actividadFecha');
+                if (campoFecha && !campoFecha.value) {
+                    // Sugerir hoy a las 09:00 como punto de partida
+                    const hoy = new Date();
+                    const yyyy = hoy.getFullYear();
+                    const mm = String(hoy.getMonth()+1).padStart(2,'0');
+                    const dd = String(hoy.getDate()).padStart(2,'0');
+                    campoFecha.value = `${yyyy}-${mm}-${dd}T09:00`;
+                }
+            }, 50);
+        }
+
         function duplicarActividad(id) {
             const a = appData.actividades.find(a => a.id === id);
             if (!a) return;
@@ -1686,6 +1759,18 @@
             if (!s || !s.fecha) return;
             const fecha = new Date(s.fecha);
             fecha.setDate(fecha.getDate() + dias);
+            s.fecha = fecha.toISOString().slice(0, 16);
+            guardarDatos();
+            renderizarAgenda();
+        }
+
+        function ajustarHoraSubtarea(actividadId, subtareaId, minutos) {
+            const a = appData.actividades.find(a => a.id === actividadId);
+            if (!a) return;
+            const s = a.subtareas.find(s => s.id === subtareaId);
+            if (!s || !s.fecha) return;
+            const fecha = new Date(s.fecha);
+            fecha.setMinutes(fecha.getMinutes() + minutos);
             s.fecha = fecha.toISOString().slice(0, 16);
             guardarDatos();
             renderizarAgenda();
@@ -1874,7 +1959,7 @@
                 creado: id ? (appData.actividades.find(a => a.id === parseInt(id))?.creado || new Date().toISOString()) : new Date().toISOString()
             };
 
-            const solapadas = detectarSolapamiento(actividad.fecha, actividad.duracion, actividad.unidad, id ? parseInt(id) : null);
+            const solapadas = actividad.fecha ? detectarSolapamiento(actividad.fecha, actividad.duracion, actividad.unidad, id ? parseInt(id) : null) : [];
             if (solapadas.length > 0) {
                 const nombres = solapadas.map(a => `"${a.nombre}" (${new Date(a.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})})`).join(', ');
                 errDiv.innerHTML = `<strong>⚠️ Solapamiento detectado:</strong> esta actividad se superpone con ${nombres}. Puedes guardar igual o cambiar el horario.
@@ -1904,6 +1989,7 @@
             renderizarTodasActividades();
             renderizarProyectos();
             renderizarAgenda();
+            renderizarDashboard();
         }
 
         function guardarActividadForzado() {
@@ -1966,7 +2052,7 @@
 
             lista.innerHTML = actividades.map(a => {
                 const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
-                const esAtrasada = new Date(a.fecha) < new Date() && !a.completada;
+                const esAtrasada = actividadEstaAtrasada(a);
                 const ritualBadge = a.ritualId ? getRitualBadge(a.ritualId) : '';
 
                 return `
@@ -2276,7 +2362,7 @@
                     const t = new Date(); t.setHours(parseInt(h), parseInt(m), 0, 0);
                     return t < ahora && !(item.completados && item.completados[fechaStr]);
                 }
-                return new Date(item.fecha) < ahora && !item.completada;
+                return actividadEstaAtrasada(item);
             };
 
             items.sort((a, b) => {
@@ -2331,6 +2417,10 @@
                                         <button class="btn btn-edit btn-small" onclick="abrirModalActividad(${s._actividadId})">Editar</button>
                                         <button class="btn btn-secondary btn-small" onclick="moverDiaSubtarea(${s._actividadId},${s.id},-1)" style="padding:2px 7px; font-size:0.75rem;">←día</button>
                                         <button class="btn btn-secondary btn-small" onclick="moverDiaSubtarea(${s._actividadId},${s.id},1)" style="padding:2px 7px; font-size:0.75rem;">día→</button>
+                                        <button class="btn btn-secondary btn-small" onclick="ajustarHoraSubtarea(${s._actividadId},${s.id},-60)" style="padding:2px 7px; font-size:0.75rem;">-1h</button>
+                                        <button class="btn btn-secondary btn-small" onclick="ajustarHoraSubtarea(${s._actividadId},${s.id},-15)" style="padding:2px 7px; font-size:0.75rem;">-15m</button>
+                                        <button class="btn btn-secondary btn-small" onclick="ajustarHoraSubtarea(${s._actividadId},${s.id},15)" style="padding:2px 7px; font-size:0.75rem;">+15m</button>
+                                        <button class="btn btn-secondary btn-small" onclick="ajustarHoraSubtarea(${s._actividadId},${s.id},60)" style="padding:2px 7px; font-size:0.75rem;">+1h</button>
                                     </div>
                                 </div>
                             </div>`;
@@ -2343,6 +2433,11 @@
                     const ritualBadge = ritualAct ? `<span class="ritual-badge" style="background:${getRitualColor(a.ritualId)}; cursor:pointer;" onclick="toggleRitualDia('${rAEid}')">${ritualAct.numero || ritualAct.nombre}</span>` : '';
                     const ritualActPanel = ritualAct && ritualAct.frases ? `<div id="${rAEid}" style="display:none; margin-top:0.5rem; padding:0.75rem; background:var(--lavender-light); border-radius:8px; font-size:0.85rem;">${ritualAct.frases.map((f,i)=>`<p style="margin-bottom:0.4rem;"><strong style="color:var(--purple);font-size:0.78rem;">${['Seguridad Corporal','Gestión de la Emoción','Cambio de Lenguaje para Avanzar','Reprogramación','Acción'][i]}:</strong><br>${f}</p>`).join('')}</div>` : '';
                     const subtareasMismaFecha = (a.subtareas || []).filter(s => !s.fechaPropia);
+                    const subtareasMismaFechaConHora = subtareasMismaFecha.map(s => {
+                        const idx = (a.subtareas || []).findIndex(x => x.id === s.id);
+                        const horaCalc = calcularHoraSubtarea(a, idx);
+                        return { ...s, _horaCalc: horaCalc };
+                    });
                     return `
                         <div class="task-item ${atrasado ? 'atrasada' : ''} ${a.completada ? 'completada' : ''}" ${ritualAct ? `onclick="verRitualModal(${a.ritualId})" style="cursor:pointer;"` : ''}>
                             <div style="display:flex; justify-content:space-between; align-items:start; gap:0.5rem;">
@@ -2358,12 +2453,13 @@
                                         ${new Date(a.fecha).toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'})} · ${duracionTexto(a.duracion, a.unidad || 'h')}
                                         ${a.limitacion ? `<br>🧠 ${a.limitacion}` : ''}
                                     </p>
-                                    ${subtareasMismaFecha.length > 0 ? `
+                                    ${subtareasMismaFechaConHora.length > 0 ? `
                                         <div style="margin-top:0.5rem;">
-                                            ${subtareasMismaFecha.map(s => `
+                                            ${subtareasMismaFechaConHora.map(s => `
                                                 <div style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0.5rem; background:white; border-radius:6px; margin-bottom:0.25rem; font-size:0.85rem; cursor:pointer;" onclick="event.stopPropagation(); toggleSubtarea(${a.id}, ${s.id})">
                                                     <span style="color:${s.completada ? 'var(--green)' : '#aaa'}; font-size:1rem;">${s.completada ? '☑' : '☐'}</span>
-                                                    <span style="${s.completada ? 'text-decoration:line-through; color:#999;' : ''}">${s.nombre}</span>
+                                                    <span style="color:#888; font-size:0.78rem; flex-shrink:0;">${new Date(s._horaCalc).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})}</span>
+                                                    <span style="${s.completada ? 'text-decoration:line-through; color:#999;' : ''}">${s.nombre}${s.duracion ? ` <small style="color:#aaa;">· ${duracionTexto(s.duracion, s.unidad||'min')}</small>` : ''}</span>
                                                 </div>`).join('')}
                                         </div>` : ''}
                                 </div>
@@ -2391,7 +2487,155 @@
 
         function renderizarAgendaDia(contenedor) {
             const fechaStr = document.getElementById('fechaAgenda').value;
-            contenedor.innerHTML = buildDiaItemsHTML(fechaStr);
+            const fechaDia = new Date(fechaStr + 'T00:00:00');
+            const esHoy = fechaDia.toDateString() === new Date().toDateString();
+            const diaValor = fechaDia.getDay();
+            const diasNombre = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+            const diasNombreLargo = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+            const fechaLabel = fechaDia.toLocaleDateString('es-CL', {day:'2-digit', month:'long', year:'numeric'});
+
+            const habitosDia = appData.habitos.filter(h => {
+                const inicio = new Date(h.fechaInicio + 'T00:00:00');
+                if (fechaDia < inicio) return false;
+                if (h.frecuencia === 'diaria') return true;
+                if (h.frecuencia === 'semanal') return h.diasSemana.includes(diaValor);
+                if (h.frecuencia === 'mensual') return fechaDia.getDate() === inicio.getDate();
+                return false;
+            });
+
+            const actividadesDia = appData.actividades.filter(a => {
+                if (new Date(a.fecha).toDateString() !== fechaDia.toDateString()) return false;
+                const todasConFecha = a.subtareas && a.subtareas.length > 0 && a.subtareas.every(s => s.fechaPropia && s.fecha);
+                return !todasConFecha;
+            });
+
+            const subtareasDia = [];
+            appData.actividades.forEach(a => {
+                (a.subtareas || []).forEach(s => {
+                    if (s.fechaPropia && s.fecha && new Date(s.fecha).toDateString() === fechaDia.toDateString()) {
+                        subtareasDia.push({ ...s, _actividadId: a.id, _actividadNombre: a.nombre, _fechaParent: a.fecha });
+                    }
+                });
+            });
+
+            const totalHoras = habitosDia.reduce((s, h) => s + duracionAHoras(h.duracion, h.unidad || 'min'), 0)
+                + actividadesDia.reduce((s, a) => s + duracionAHoras(a.duracion, a.unidad || 'h'), 0)
+                + subtareasDia.reduce((s, sub) => s + duracionAHoras(sub.duracion || 0, sub.unidad || 'min'), 0);
+
+            const itemsDia = [
+                ...habitosDia.map(h => ({ ...h, _tipo:'habito', _min: getMinutosDelDia(h.hora) })),
+                ...actividadesDia.map(a => ({ ...a, _tipo:'actividad', _min: getMinutosDelDia(new Date(a.fecha).toTimeString().substring(0,5)) })),
+                ...subtareasDia.map(s => {
+                    const fRef = (s.fechaPropia && s.fecha) ? new Date(s.fecha) : new Date(s._fechaParent);
+                    return { ...s, _tipo:'subtarea', _min: getMinutosDelDia(fRef.toTimeString().substring(0,5)) };
+                })
+            ].sort((a, b) => a._min - b._min);
+
+            const jornada = getJornada(fechaDia);
+            const excede = totalHoras > jornada;
+
+            let html = `
+                <div style="background:${esHoy ? '#EDE7F6' : 'var(--lavender-light)'}; border-radius:12px; padding:1.25rem; ${excede ? 'border:2px solid #ef9a9a;' : ''}">
+                    <div style="text-align:center; margin-bottom:0.75rem;">
+                        <div style="font-weight:700; color:${excede ? '#c62828' : 'var(--purple)'}; font-size:1.15rem;">${diasNombreLargo[diaValor]}</div>
+                        <div style="font-size:0.85rem; color:#666; margin-top:2px;">${fechaLabel}</div>
+                        <div style="font-size:0.82rem; font-weight:600; color:${excede ? '#c62828' : '#666'}; margin-top:4px;">${totalHoras.toFixed(1)}h programadas${excede ? ' ⚠️' : ''}</div>
+                        ${excede ? `<div style="font-size:0.75rem; color:#c62828; padding:3px 8px; background:#ffebee; border-radius:6px; margin-top:4px; display:inline-block;">Excede jornada — revisa y reagenda</div>` : ''}
+                        ${itemsDia.length === 0 ? `<div style="color:#aaa; font-size:0.9rem; margin-top:1rem;">Sin actividades para este día</div>` : ''}
+                    </div>
+                    ${itemsDia.map(item => {
+                        if (item._tipo === 'habito') {
+                            const h = item;
+                            const completado = h.completados && h.completados[fechaStr];
+                            const ritual = h.ritualId ? appData.rituales.find(r => r.id === h.ritualId) : null;
+                            const color = ritual ? getRitualColor(h.ritualId) : 'var(--gold)';
+                            const rHid = `rd-h-${h.id}-${fechaStr.replace(/-/g,'')}`;
+                            return `<div class="week-task-mini ${completado ? 'completada' : ''}" style="border-left-color:${color}; font-size:0.82rem; padding:0.6rem 0.75rem; margin-bottom:0.5rem;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                                    <div style="flex:1; min-width:0;">
+                                        <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${completado ? 'text-decoration:line-through; color:#999;' : ''}">⚡ ${h.hora} &nbsp;${h.nombre}</div>
+                                        <div style="font-size:0.75rem; color:#888; margin-top:2px;">${duracionTexto(h.duracion, h.unidad||'min')}${completado ? ' · ✓ Completado' : ''}</div>
+                                    </div>
+                                    <div style="display:flex; gap:4px; flex-shrink:0; align-items:center;">
+                                        ${ritual ? `<button style="border:none; background:${color}; color:white; border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); verRitualModal(${h.ritualId})">Ritual</button>` : ''}
+                                        <button style="border:none; background:${completado ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="toggleHabitoCompletado(${h.id},'${fechaStr}')">${completado ? '↩' : '✓'}</button>
+                                    </div>
+                                </div>
+                            </div>`;
+                        }
+                        if (item._tipo === 'subtarea') {
+                            const s = item;
+                            const fRef = (s.fechaPropia && s.fecha) ? new Date(s.fecha) : new Date(s._fechaParent);
+                            const hora = fRef.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+                            return `<div class="week-task-mini ${s.completada ? 'completada' : ''}" style="border-left-color:#9c27b0; font-size:0.82rem; padding:0.6rem 0.75rem; margin-bottom:0.5rem;">
+                                <div style="display:flex; justify-content:space-between; align-items:start; gap:6px;">
+                                    <div style="flex:1; min-width:0;">
+                                        <div style="font-weight:600; ${s.completada ? 'text-decoration:line-through; color:#999;' : ''}">📎 ${hora} &nbsp;${s._actividadNombre}</div>
+                                        <div style="font-size:0.78rem; color:#666; margin-top:2px;">${s.nombre}${s.duracion ? ` · ${duracionTexto(s.duracion, s.unidad||'min')}` : ''}</div>
+                                    </div>
+                                    <button style="border:none; background:${s.completada ? 'var(--green)' : '#9c27b0'}; color:white; border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer; flex-shrink:0;" onclick="toggleSubtarea(${s._actividadId},${s.id})">${s.completada ? '↩' : '✓'}</button>
+                                </div>
+                                <div style="display:flex; gap:3px; margin-top:6px; flex-wrap:wrap;">
+                                    <span style="font-size:0.7rem; color:#888; align-self:center;">Mover día:</span>
+                                    <button style="border:1px solid #ccc; background:white; border-radius:4px; padding:2px 7px; font-size:0.7rem; cursor:pointer;" onclick="moverDiaSubtarea(${s._actividadId},${s.id},-1)">←</button>
+                                    <button style="border:1px solid #ccc; background:white; border-radius:4px; padding:2px 7px; font-size:0.7rem; cursor:pointer;" onclick="moverDiaSubtarea(${s._actividadId},${s.id},1)">→</button>
+                                    <span style="font-size:0.7rem; color:#888; align-self:center; margin-left:4px;">Hora:</span>
+                                    <button style="border:1px solid #ccc; background:white; border-radius:4px; padding:2px 7px; font-size:0.7rem; cursor:pointer;" onclick="ajustarHoraSubtarea(${s._actividadId},${s.id},-60)">-1h</button>
+                                    <button style="border:1px solid #ccc; background:white; border-radius:4px; padding:2px 7px; font-size:0.7rem; cursor:pointer;" onclick="ajustarHoraSubtarea(${s._actividadId},${s.id},-15)">-15m</button>
+                                    <button style="border:1px solid #ccc; background:white; border-radius:4px; padding:2px 7px; font-size:0.7rem; cursor:pointer;" onclick="ajustarHoraSubtarea(${s._actividadId},${s.id},15)">+15m</button>
+                                    <button style="border:1px solid #ccc; background:white; border-radius:4px; padding:2px 7px; font-size:0.7rem; cursor:pointer;" onclick="ajustarHoraSubtarea(${s._actividadId},${s.id},60)">+1h</button>
+                                </div>
+                            </div>`;
+                        }
+                        // actividad
+                        const a = item;
+                        const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
+                        const atrasado = actividadEstaAtrasada(a);
+                        const ritual = a.ritualId ? appData.rituales.find(r => r.id === a.ritualId) : null;
+                        const rAid = `rd-a-${a.id}-${fechaStr.replace(/-/g,'')}`;
+                        const subtareasMismaFecha = (a.subtareas || []).filter(s => !s.fechaPropia);
+                        const subtareasMismaFechaConHora = subtareasMismaFecha.map(s => {
+                            const idx = (a.subtareas || []).findIndex(x => x.id === s.id);
+                            return { ...s, _horaCalc: calcularHoraSubtarea(a, idx) };
+                        });
+                        return `<div class="week-task-mini ${a.completada ? 'completada' : ''} ${atrasado ? 'atrasada' : ''}" style="font-size:0.82rem; padding:0.6rem 0.75rem; margin-bottom:0.5rem; ${atrasado ? 'border-left-color:#e53935;' : ''}">
+                            <div style="display:flex; justify-content:space-between; align-items:start; gap:6px;">
+                                <div style="flex:1; min-width:0;">
+                                    <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-bottom:2px;">
+                                        <span style="font-size:0.68rem; background:var(--lavender); color:var(--purple); border-radius:10px; padding:1px 7px; font-weight:600;">${proyecto?.nombre || 'Sin proyecto'}</span>
+                                        ${atrasado ? `<span style="font-size:0.68rem; background:#ffebee; color:#c62828; border-radius:10px; padding:1px 6px; font-weight:600;">ATRASADA</span>` : ''}
+                                        ${ritual ? `<span style="font-size:0.68rem; background:${getRitualColor(a.ritualId)}; color:white; border-radius:10px; padding:1px 6px;">${ritual.numero || ritual.nombre}</span>` : ''}
+                                    </div>
+                                    <div style="font-weight:600; ${a.completada ? 'text-decoration:line-through; color:#999;' : ''}">📌 ${new Date(a.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})} &nbsp;${a.nombre}</div>
+                                    <div style="font-size:0.75rem; color:#888; margin-top:2px;">${duracionTexto(a.duracion, a.unidad||'h')}${a.limitacion ? ` · 🧠 ${a.limitacion}` : ''}</div>
+                                    ${subtareasMismaFechaConHora.length > 0 ? `
+                                    <div style="margin-top:6px; border-top:1px solid #eee; padding-top:5px;">
+                                        ${subtareasMismaFechaConHora.map(s => `
+                                        <div style="display:flex; align-items:center; gap:5px; padding:3px 0; font-size:0.76rem; cursor:pointer;" onclick="event.stopPropagation(); toggleSubtarea(${a.id},${s.id})">
+                                            <span style="color:${s.completada ? 'var(--green)' : '#aaa'}; font-size:0.9rem;">${s.completada ? '☑' : '☐'}</span>
+                                            <span style="color:#888; flex-shrink:0;">${new Date(s._horaCalc).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})}</span>
+                                            <span style="${s.completada ? 'text-decoration:line-through; color:#999;' : ''}">${s.nombre}${s.duracion ? ` <span style="color:#bbb;">· ${duracionTexto(s.duracion,s.unidad||'min')}</span>` : ''}</span>
+                                        </div>`).join('')}
+                                    </div>` : ''}
+                                </div>
+                                <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0; align-items:flex-end;">
+                                    <button style="border:none; background:${a.completada ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); toggleCompletada(${a.id})">${a.completada ? 'Reabrir' : 'Completar'}</button>
+                                    <button style="border:1px solid var(--purple); background:white; color:var(--purple); border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); abrirModalActividad(${a.id})">Editar</button>
+                                    <button style="border:1px solid #ccc; background:white; color:#666; border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); duplicarActividad(${a.id})">Duplicar</button>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:3px; margin-top:6px; flex-wrap:wrap; align-items:center;">
+                                <span style="font-size:0.7rem; color:#888;">Mover:</span>
+                                <button style="border:1px solid #ccc; background:white; border-radius:4px; padding:2px 7px; font-size:0.7rem; cursor:pointer;" onclick="event.stopPropagation(); ajustarHoraActividad(${a.id},-60)">-1h</button>
+                                <button style="border:1px solid #ccc; background:white; border-radius:4px; padding:2px 7px; font-size:0.7rem; cursor:pointer;" onclick="event.stopPropagation(); ajustarHoraActividad(${a.id},-15)">-15m</button>
+                                <button style="border:1px solid #ccc; background:white; border-radius:4px; padding:2px 7px; font-size:0.7rem; cursor:pointer;" onclick="event.stopPropagation(); ajustarHoraActividad(${a.id},15)">+15m</button>
+                                <button style="border:1px solid #ccc; background:white; border-radius:4px; padding:2px 7px; font-size:0.7rem; cursor:pointer;" onclick="event.stopPropagation(); ajustarHoraActividad(${a.id},60)">+1h</button>
+                                ${ritual ? `<button style="border:none; background:${getRitualColor(a.ritualId)}; color:white; border-radius:4px; padding:2px 8px; font-size:0.7rem; cursor:pointer; margin-left:4px;" onclick="event.stopPropagation(); verRitualModal(${a.ritualId})">Ver Ritual</button>` : ''}
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+            contenedor.innerHTML = html;
         }
 
         function calcularHorasDia(fechaDia) {
@@ -2453,12 +2697,18 @@
             startDay.setDate(primerDia.getDate() + offsetLunes);
             const hoy = new Date();
 
+            const sinAgendarMes = appData.actividades.filter(a => !a.fecha && !a.completada);
             let html = `
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
                     <button class="btn btn-secondary btn-small" onclick="navegarMes(-1)">‹ Anterior</button>
                     <strong style="color:var(--purple); font-size:1.05rem;">${nombresMes[mes]} ${año}</strong>
                     <button class="btn btn-secondary btn-small" onclick="navegarMes(1)">Siguiente ›</button>
                 </div>
+                ${sinAgendarMes.length > 0 ? `
+                <div style="background:#FFF8E1; border:1px solid #F9A825; border-radius:8px; padding:0.5rem 0.85rem; margin-bottom:0.85rem; display:flex; align-items:center; justify-content:space-between; gap:0.5rem; cursor:pointer;" onclick="mostrarVista('dashboard')">
+                    <span style="font-size:0.82rem; color:#E65100; font-weight:600;">📋 ${sinAgendarMes.length} actividad${sinAgendarMes.length > 1 ? 'es' : ''} sin agendar</span>
+                    <span style="font-size:0.75rem; color:#F57F17;">Ver →</span>
+                </div>` : ''}
                 <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:1rem;">
                     ${diasNombre.map(d => `<div style="text-align:center; font-size:0.68rem; font-weight:700; color:var(--purple); padding:3px 0;">${d}</div>`).join('')}
             `;
@@ -2700,6 +2950,31 @@
             }
 
             html += '</div>';
+
+            // Panel "Sin agendar" debajo de la semana
+            const sinAgendarSemana = appData.actividades.filter(a => !a.fecha && !a.completada)
+                .sort((a, b) => new Date(a.creado || 0) - new Date(b.creado || 0));
+            if (sinAgendarSemana.length > 0) {
+                html += `<div style="margin-top:1rem; background:var(--lavender-light); border-radius:10px; padding:0.85rem;">
+                    <div style="font-weight:700; color:var(--purple); margin-bottom:0.6rem; font-size:0.88rem;">📋 Por agendar (${sinAgendarSemana.length})</div>
+                    ${sinAgendarSemana.map(a => {
+                        const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
+                        const dias = diasSinAgendar(a);
+                        const col = colorSinAgendar(dias);
+                        return `<div class="week-task-mini" style="background:${col.bg}; border-left-color:${col.border}; margin-bottom:0.4rem; font-size:0.72rem; padding:0.45rem 0.6rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:4px;">
+                                <div style="flex:1; min-width:0; overflow:hidden;">
+                                    <span style="color:${col.texto}; font-size:0.65rem;">${col.label}</span><br>
+                                    <strong style="font-size:0.75rem;">${a.nombre}</strong>
+                                    ${proyecto ? `<span style="color:#888; font-size:0.65rem;"> · ${proyecto.nombre}</span>` : ''}
+                                </div>
+                                <button style="border:none; background:var(--purple); color:white; border-radius:5px; padding:2px 8px; font-size:0.65rem; cursor:pointer; flex-shrink:0;" onclick="agendarActividad(${a.id})">Agendar</button>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+            }
+
             contenedor.innerHTML = html;
         }
 
@@ -2716,9 +2991,8 @@
             const total = appData.actividades.length;
             const completadas = appData.actividades.filter(a => a.completada).length;
             const pendientes = total - completadas;
-            const atrasadas = appData.actividades.filter(a => 
-                new Date(a.fecha) < new Date() && !a.completada
-            ).length;
+            const atrasadas = appData.actividades.filter(a => actividadEstaAtrasada(a)).length;
+            const sinAgendar = appData.actividades.filter(a => !a.fecha && !a.completada).length;
 
             document.getElementById('statsGrid').innerHTML = `
                 <div class="stat-card">
@@ -2736,6 +3010,10 @@
                 <div class="stat-card red">
                     <div class="stat-value">${atrasadas}</div>
                     <div class="stat-label">Atrasadas</div>
+                </div>
+                <div class="stat-card" style="background:${sinAgendar > 0 ? '#FFF3E0' : ''}; cursor:${sinAgendar > 0 ? 'pointer' : 'default'};" onclick="${sinAgendar > 0 ? "document.getElementById('listaSinAgendar').scrollIntoView({behavior:'smooth'})" : ''}">
+                    <div class="stat-value" style="color:${sinAgendar >= 5 ? '#C62828' : sinAgendar >= 3 ? '#E65100' : sinAgendar >= 1 ? '#F57F17' : 'var(--purple)'};">${sinAgendar}</div>
+                    <div class="stat-label">Sin agendar</div>
                 </div>
             `;
 
@@ -2755,10 +3033,34 @@
                 </div>
             `;
 
+            // POR AGENDAR
+            const listaSinAgendar = document.getElementById('listaSinAgendar');
+            if (listaSinAgendar) {
+                const sinAgendarItems = appData.actividades.filter(a => !a.fecha && !a.completada)
+                    .sort((a, b) => new Date(a.creado || 0) - new Date(b.creado || 0));
+                if (sinAgendarItems.length === 0) {
+                    listaSinAgendar.innerHTML = '<p style="text-align:center; color:var(--green);">✅ Todo está agendado</p>';
+                } else {
+                    listaSinAgendar.innerHTML = sinAgendarItems.map(a => {
+                        const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
+                        const dias = diasSinAgendar(a);
+                        const col = colorSinAgendar(dias);
+                        return `<div class="week-task-mini" style="background:${col.bg}; border-left-color:${col.border}; padding:0.65rem 0.8rem; margin-bottom:0.5rem; font-size:0.83rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:start; gap:8px;">
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:0.68rem; background:var(--lavender); color:var(--purple); border-radius:10px; padding:1px 7px; display:inline-block; margin-bottom:3px; font-weight:600;">${proyecto?.nombre || 'Sin proyecto'}</div>
+                                    <div style="font-weight:600;">${a.nombre}</div>
+                                    <div style="font-size:0.72rem; color:${col.texto}; margin-top:3px;">${col.label}${a.duracion ? ` · ${duracionTexto(a.duracion, a.unidad||'h')}` : ''}</div>
+                                </div>
+                                <button style="border:none; background:var(--purple); color:white; border-radius:6px; padding:4px 10px; font-size:0.75rem; cursor:pointer; flex-shrink:0; white-space:nowrap;" onclick="agendarActividad(${a.id})">📅 Agendar</button>
+                            </div>
+                        </div>`;
+                    }).join('');
+                }
+            }
+
             const listaAtrasadas = document.getElementById('listaAtrasadas');
-            const actividadesAtrasadas = appData.actividades.filter(a => 
-                new Date(a.fecha) < new Date() && !a.completada
-            );
+            const actividadesAtrasadas = appData.actividades.filter(a => actividadEstaAtrasada(a));
 
             if (actividadesAtrasadas.length === 0) {
                 listaAtrasadas.innerHTML = '<p style="text-align: center; color: var(--green);">✅ Sin atrasadas</p>';
@@ -2791,7 +3093,7 @@
                 } else {
                     listaParaHoy.innerHTML = paraHoy.map(a => {
                         const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
-                        const esAtrasada = new Date(a.fecha) < hoy;
+                        const esAtrasada = actividadEstaAtrasada(a);
                         return `
                             <div class="dashboard-hoy-item ${esAtrasada ? 'atrasada' : ''}">
                                 <span class="badge badge-purple" style="font-size:0.7rem;">${proyecto?.nombre || 'Sin proyecto'}</span>
@@ -2824,7 +3126,7 @@
                 } else {
                     listaEstaSemana.innerHTML = estaSemana.map(a => {
                         const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
-                        const esAtrasada = new Date(a.fecha) < hoy;
+                        const esAtrasada = actividadEstaAtrasada(a);
                         return `
                             <div class="dashboard-semana-item ${esAtrasada ? 'atrasada' : ''}">
                                 <span class="badge badge-purple" style="font-size:0.7rem;">${proyecto?.nombre || 'Sin proyecto'}</span>
