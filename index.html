@@ -1001,7 +1001,7 @@
                             </select>
                         </div>
                         <div style="display:flex; gap:0.5rem;">
-                            <button type="button" class="btn btn-primary btn-small" onclick="confirmarSubtarea()">Agregar</button>
+                            <button type="button" id="btnConfirmarSubtarea" class="btn btn-primary btn-small" onclick="confirmarSubtarea()">Agregar</button>
                             <button type="button" class="btn btn-small" onclick="cancelarSubtarea()" style="background:#eee; color:#333;">Cancelar</button>
                         </div>
                     </div>
@@ -1285,6 +1285,7 @@
         let periodosDash = 14;
         let vistaHabitosActual = 'lista';
         let subtareasTemp = [];
+        let subtareaEditandoIdx = null;
 
         // HELPERS DE DURACIÓN
         function duracionAHoras(duracion, unidad) {
@@ -1315,6 +1316,9 @@
         function cancelarSubtarea() {
             document.getElementById('formSubtarea').style.display = 'none';
             document.getElementById('btnAgregarSubtarea').style.display = 'inline-flex';
+            subtareaEditandoIdx = null;
+            const btn = document.getElementById('btnConfirmarSubtarea');
+            if (btn) btn.textContent = 'Agregar';
         }
         function toggleSubtareaFecha() {
             const propia = document.querySelector('input[name="subtareaFecha"]:checked').value === 'propia';
@@ -1328,9 +1332,29 @@
             const durVal = document.getElementById('subtareaDuracion').value;
             const duracion = durVal ? parseFloat(durVal) : null;
             const unidad = document.getElementById('subtareaUnidad').value;
-            subtareasTemp.push({ id: Date.now(), nombre, fechaPropia, fecha, duracion, unidad, completada: false });
+            if (subtareaEditandoIdx !== null) {
+                subtareasTemp[subtareaEditandoIdx] = { ...subtareasTemp[subtareaEditandoIdx], nombre, fechaPropia, fecha, duracion, unidad };
+            } else {
+                subtareasTemp.push({ id: Date.now(), nombre, fechaPropia, fecha, duracion, unidad, completada: false });
+            }
             renderizarSubtareasTemp();
             cancelarSubtarea();
+        }
+
+        function editarSubtareaTemp(idx) {
+            const s = subtareasTemp[idx];
+            subtareaEditandoIdx = idx;
+            document.getElementById('subtareaNombre').value = s.nombre;
+            document.getElementById('subtareaDuracion').value = s.duracion || '';
+            document.getElementById('subtareaUnidad').value = s.unidad || 'min';
+            const propia = s.fechaPropia && s.fecha;
+            document.querySelector(`input[name="subtareaFecha"][value="${propia ? 'propia' : 'misma'}"]`).checked = true;
+            document.getElementById('subtareaFechaContainer').style.display = propia ? 'block' : 'none';
+            if (propia) document.getElementById('subtareaFechaInput').value = s.fecha;
+            document.getElementById('formSubtarea').style.display = 'block';
+            document.getElementById('btnAgregarSubtarea').style.display = 'none';
+            const btn = document.getElementById('btnConfirmarSubtarea');
+            if (btn) btn.textContent = 'Guardar cambios';
         }
         function eliminarSubtareaTemp(idx) {
             subtareasTemp.splice(idx, 1);
@@ -1340,8 +1364,14 @@
             const c = document.getElementById('subtareasContainer');
             if (!c) return;
             c.innerHTML = subtareasTemp.map((s, i) => `
-                <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem; background:white; border-radius:6px; margin-bottom:0.25rem;">
+                <div style="display:flex; align-items:center; gap:0.4rem; padding:0.5rem; background:white; border-radius:6px; margin-bottom:0.25rem;">
+                    <div style="display:flex; flex-direction:column; gap:1px;">
+                        <button type="button" onclick="moverSubtareaTemp(${i},-1)" ${i === 0 ? 'disabled' : ''} style="border:none; background:${i===0?'#eee':'var(--lavender)'}; border-radius:3px; padding:0 4px; font-size:0.65rem; cursor:${i===0?'default':'pointer'}; line-height:1.4;">▲</button>
+                        <button type="button" onclick="moverSubtareaTemp(${i},1)" ${i === subtareasTemp.length-1 ? 'disabled' : ''} style="border:none; background:${i===subtareasTemp.length-1?'#eee':'var(--lavender)'}; border-radius:3px; padding:0 4px; font-size:0.65rem; cursor:${i===subtareasTemp.length-1?'default':'pointer'}; line-height:1.4;">▼</button>
+                    </div>
                     <span style="flex:1; font-size:0.9rem;">${s.nombre}${s.duracion ? ` <small style="color:var(--purple);">· ${duracionTexto(s.duracion, s.unidad||'min')}</small>` : ''}${s.fechaPropia && s.fecha ? ` <small style="color:#666;">(${new Date(s.fecha).toLocaleDateString('es-CL')})</small>` : ' <small style="color:#888;">(misma fecha)</small>'}</span>
+                    <button type="button" class="btn btn-edit btn-small" onclick="editarSubtareaTemp(${i})" style="padding:0.2rem 0.5rem;">✏️</button>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="duplicarSubtareaTemp(${i})" style="padding:0.2rem 0.5rem;">⧉</button>
                     <button type="button" class="btn btn-delete btn-small" onclick="eliminarSubtareaTemp(${i})" style="padding:0.2rem 0.5rem;">×</button>
                 </div>`).join('');
         }
@@ -1408,7 +1438,9 @@
             sb.auth.onAuthStateChange((event, session) => {
                 usuarioActual = session?.user || null;
                 actualizarHeaderAuth();
-                if (event === 'SIGNED_IN') sincronizarDesdeSupabase();
+                if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && usuarioActual) {
+                    sincronizarDesdeSupabase();
+                }
             });
         }
 
@@ -1604,6 +1636,72 @@
         }
 
         // PROYECTOS
+        function duplicarActividad(id) {
+            const a = appData.actividades.find(a => a.id === id);
+            if (!a) return;
+            const copia = { ...a, id: Date.now(), nombre: 'Copia de ' + a.nombre, completada: false,
+                subtareas: (a.subtareas || []).map(s => ({ ...s, id: Date.now() + Math.random(), completada: false })) };
+            appData.actividades.push(copia);
+            guardarDatos();
+            renderizarTodasActividades();
+            renderizarAgenda();
+        }
+
+        function duplicarHabito(id) {
+            const h = appData.habitos.find(h => h.id === id);
+            if (!h) return;
+            const copia = { ...h, id: Date.now(), nombre: 'Copia de ' + h.nombre, completados: {} };
+            appData.habitos.push(copia);
+            guardarDatos();
+            renderizarHabitos();
+        }
+
+        function duplicarSubtareaTemp(idx) {
+            const s = subtareasTemp[idx];
+            subtareasTemp.splice(idx + 1, 0, { ...s, id: Date.now(), nombre: 'Copia de ' + s.nombre, completada: false });
+            renderizarSubtareasTemp();
+        }
+
+        function moverSubtareaTemp(idx, dir) {
+            const nuevoIdx = idx + dir;
+            if (nuevoIdx < 0 || nuevoIdx >= subtareasTemp.length) return;
+            [subtareasTemp[idx], subtareasTemp[nuevoIdx]] = [subtareasTemp[nuevoIdx], subtareasTemp[idx]];
+            renderizarSubtareasTemp();
+        }
+
+        function ajustarHoraActividad(id, minutos) {
+            const a = appData.actividades.find(a => a.id === id);
+            if (!a) return;
+            const fecha = new Date(a.fecha);
+            fecha.setMinutes(fecha.getMinutes() + minutos);
+            a.fecha = fecha.toISOString().slice(0, 16);
+            guardarDatos();
+            renderizarAgenda();
+        }
+
+        function moverDiaSubtarea(actividadId, subtareaId, dias) {
+            const a = appData.actividades.find(a => a.id === actividadId);
+            if (!a) return;
+            const s = a.subtareas.find(s => s.id === subtareaId);
+            if (!s || !s.fecha) return;
+            const fecha = new Date(s.fecha);
+            fecha.setDate(fecha.getDate() + dias);
+            s.fecha = fecha.toISOString().slice(0, 16);
+            guardarDatos();
+            renderizarAgenda();
+        }
+
+        function detectarSolapamiento(nuevaFecha, duracion, unidad, excluirId) {
+            const inicio = new Date(nuevaFecha).getTime();
+            const fin = inicio + duracionAHoras(duracion, unidad) * 3600000;
+            return appData.actividades.filter(a => {
+                if (a.id === excluirId) return false;
+                const aInicio = new Date(a.fecha).getTime();
+                const aFin = aInicio + duracionAHoras(a.duracion, a.unidad || 'h') * 3600000;
+                return inicio < aFin && fin > aInicio;
+            });
+        }
+
         function eliminarProyecto(id) {
             const p = appData.proyectos.find(p => p.id === id);
             if (!p) return;
@@ -1776,18 +1874,46 @@
                 creado: id ? (appData.actividades.find(a => a.id === parseInt(id))?.creado || new Date().toISOString()) : new Date().toISOString()
             };
 
+            const solapadas = detectarSolapamiento(actividad.fecha, actividad.duracion, actividad.unidad, id ? parseInt(id) : null);
+            if (solapadas.length > 0) {
+                const nombres = solapadas.map(a => `"${a.nombre}" (${new Date(a.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})})`).join(', ');
+                errDiv.innerHTML = `<strong>⚠️ Solapamiento detectado:</strong> esta actividad se superpone con ${nombres}. Puedes guardar igual o cambiar el horario.
+                    <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
+                        <button type="button" class="btn btn-primary btn-small" onclick="guardarActividadForzado()">Guardar igual</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('actividadError').style.display='none'">Corregir</button>
+                    </div>`;
+                errDiv.style.display = 'block';
+                errDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                window._actividadPendiente = actividad;
+                window._actividadPendienteId = id;
+                return;
+            }
+
+            guardarActividadData(actividad, id);
+            cerrarModal('modalActividad');
+        }
+
+        function guardarActividadData(actividad, id) {
             if (id) {
                 const index = appData.actividades.findIndex(a => a.id === parseInt(id));
                 appData.actividades[index] = actividad;
             } else {
                 appData.actividades.push(actividad);
             }
-
             guardarDatos();
-            cerrarModal('modalActividad');
             renderizarTodasActividades();
             renderizarProyectos();
             renderizarAgenda();
+        }
+
+        function guardarActividadForzado() {
+            const actividad = window._actividadPendiente;
+            const id = window._actividadPendienteId;
+            if (!actividad) return;
+            window._actividadPendiente = null;
+            window._actividadPendienteId = null;
+            guardarActividadData(actividad, id);
+            cerrarModal('modalActividad');
         }
 
         function toggleCompletada(id) {
@@ -1870,6 +1996,7 @@
                                 ${a.completada ? 'Reabrir' : 'Completar'}
                             </button>
                             <button class="btn btn-edit btn-small" onclick="abrirModalActividad(${a.id})">Editar</button>
+                            <button class="btn btn-secondary btn-small" onclick="duplicarActividad(${a.id})">Duplicar</button>
                             <button class="btn btn-delete btn-small" onclick="eliminarActividad(${a.id})">Eliminar</button>
                         </div>
                     </div>
@@ -1967,7 +2094,10 @@
                                     ${h.recordatorio ? `<br>🔔 ${h.horaRecordatorio}` : ''}
                                 </p>
                             </div>
-                            <button class="btn btn-edit btn-small" onclick="event.stopPropagation(); abrirModalHabito(${h.id})">Editar</button>
+                            <div style="display:flex; gap:0.4rem;">
+                                <button class="btn btn-edit btn-small" onclick="event.stopPropagation(); abrirModalHabito(${h.id})">Editar</button>
+                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); duplicarHabito(${h.id})">Duplicar</button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -2194,9 +2324,14 @@
                                         ${hora ? `<span style="color:#666; font-size:0.85rem;"> · ${hora}</span>` : ''}
                                         ${s.duracion ? `<span style="color:#666; font-size:0.85rem;"> · ${duracionTexto(s.duracion, s.unidad||'min')}</span>` : ''}
                                     </div>
-                                    <button class="btn btn-small ${s.completada ? 'btn-secondary' : 'btn-primary'}" onclick="toggleSubtarea(${s._actividadId}, ${s.id})">
-                                        ${s.completada ? 'Reabrir' : 'Completar'}
-                                    </button>
+                                    <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+                                        <button class="btn btn-small ${s.completada ? 'btn-secondary' : 'btn-primary'}" onclick="toggleSubtarea(${s._actividadId}, ${s.id})">
+                                            ${s.completada ? 'Reabrir' : 'Completar'}
+                                        </button>
+                                        <button class="btn btn-edit btn-small" onclick="abrirModalActividad(${s._actividadId})">Editar</button>
+                                        <button class="btn btn-secondary btn-small" onclick="moverDiaSubtarea(${s._actividadId},${s.id},-1)" style="padding:2px 7px; font-size:0.75rem;">←día</button>
+                                        <button class="btn btn-secondary btn-small" onclick="moverDiaSubtarea(${s._actividadId},${s.id},1)" style="padding:2px 7px; font-size:0.75rem;">día→</button>
+                                    </div>
                                 </div>
                             </div>`;
                     }
@@ -2238,6 +2373,14 @@
                                     ${a.completada ? 'Reabrir' : 'Completar'}
                                 </button>
                                 <button class="btn btn-edit btn-small" onclick="event.stopPropagation(); abrirModalActividad(${a.id})">Editar</button>
+                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); duplicarActividad(${a.id})">Duplicar</button>
+                            </div>
+                            <div style="display:flex; gap:0.4rem; margin-top:0.4rem; flex-wrap:wrap; align-items:center;">
+                                <span style="font-size:0.75rem; color:#888;">Mover:</span>
+                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); ajustarHoraActividad(${a.id},-60)" style="padding:2px 7px; font-size:0.75rem;">-1h</button>
+                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); ajustarHoraActividad(${a.id},-15)" style="padding:2px 7px; font-size:0.75rem;">-15m</button>
+                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); ajustarHoraActividad(${a.id},15)" style="padding:2px 7px; font-size:0.75rem;">+15m</button>
+                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); ajustarHoraActividad(${a.id},60)" style="padding:2px 7px; font-size:0.75rem;">+1h</button>
                             </div>
                             ${ritualActPanel}
                         </div>`;
@@ -2898,6 +3041,7 @@
 
         // ALMACENAMIENTO
         function guardarDatos() {
+            appData._lastUpdated = Date.now();
             localStorage.setItem('appDataSER', JSON.stringify(appData));
             sincronizarHaciaSupabase();
         }
@@ -3035,13 +3179,21 @@
             if (error && error.code !== 'PGRST116') { console.error('Error cargando datos:', error); return; }
             if (data?.data && Object.keys(data.data).length > 0) {
                 const remoto = data.data;
-                if (!remoto.rituales || remoto.rituales.length === 0) remoto.rituales = RITUALES_DEFAULT;
-                if (!remoto.config) remoto.config = { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 } };
-                Object.assign(appData, remoto);
-                localStorage.setItem('appDataSER', JSON.stringify(appData));
-                renderizarTodo();
+                const tsRemoto = remoto._lastUpdated || 0;
+                const tsLocal = appData._lastUpdated || 0;
+                if (tsRemoto > tsLocal) {
+                    // Nube es más nueva: usar datos remotos
+                    if (!remoto.rituales || remoto.rituales.length === 0) remoto.rituales = RITUALES_DEFAULT;
+                    if (!remoto.config) remoto.config = { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 } };
+                    Object.assign(appData, remoto);
+                    localStorage.setItem('appDataSER', JSON.stringify(appData));
+                    renderizarTodo();
+                } else {
+                    // Local es más nuevo o igual: subir local a Supabase
+                    await sincronizarHaciaSupabase();
+                }
             } else {
-                // Primera vez: subir datos locales a Supabase
+                // Sin datos en la nube: subir local
                 await sincronizarHaciaSupabase();
             }
         }
