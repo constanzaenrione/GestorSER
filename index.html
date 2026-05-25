@@ -702,6 +702,11 @@
             </div>
 
             <div class="card">
+                <h2 class="card-title">🕐 Historial: Completadas Tarde</h2>
+                <div id="historialTarde"></div>
+            </div>
+
+            <div class="card">
                 <h2 class="card-title">📅 Para Hoy</h2>
                 <div id="listaParaHoy"></div>
             </div>
@@ -2051,9 +2056,9 @@
             return d === 1 ? '1 día tarde' : `${d} días tarde`;
         }
 
-        function registrarCompletada(act, completando) {
+        function registrarCompletada(act, completando, fechaOverride) {
             if (completando) {
-                const ahora = new Date();
+                const ahora = fechaOverride ? new Date(fechaOverride) : new Date();
                 act.completada = true;
                 act.fechaCompletada = ahora.toISOString();
                 if (act.fecha) {
@@ -2076,6 +2081,17 @@
                 act.completadaTarde = false;
                 act.diasAtraso = 0;
             }
+        }
+
+        function completarConFecha(id) {
+            const input = document.getElementById(`fechaCompletar-${id}`);
+            const fechaVal = input?.value;
+            if (!fechaVal) { alert('Selecciona la fecha en que se completó'); return; }
+            const act = appData.actividades.find(a => a.id === id);
+            if (!act) return;
+            registrarCompletada(act, true, fechaVal);
+            guardarDatos();
+            renderizarTodo();
         }
 
         function toggleCompletada(id) {
@@ -2722,7 +2738,46 @@
                     }).join('')}
                 </div>`;
 
-            contenedor.innerHTML = htmlPanelSinAgendar(fechaStr) + html;
+            contenedor.innerHTML = htmlPanelAtrasadas() + htmlPanelSinAgendar(fechaStr) + html;
+        }
+
+        function htmlPanelAtrasadas() {
+            const ahora = new Date();
+            const nowStr = ahora.toISOString().slice(0,16);
+            const items = appData.actividades.filter(a => actividadEstaAtrasada(a))
+                .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            if (items.length === 0) return '';
+            return `<div style="background:#FFF5F5; border:1px solid #ef9a9a; border-radius:10px; padding:0.85rem; margin-bottom:1rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; margin-bottom:0.5rem;" onclick="const b=this.nextElementSibling; b.style.display=b.style.display==='none'?'block':'none'; this.querySelector('.at-chv').textContent=b.style.display==='none'?'▼':'▲';">
+                    <span style="font-weight:700; color:#c62828; font-size:0.9rem;">⚠️ Atrasadas (${items.length})</span>
+                    <span class="at-chv" style="color:#c62828; font-size:0.8rem;">▲</span>
+                </div>
+                <div>
+                    ${items.map(a => {
+                        const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
+                        const diffMs = ahora - new Date(a.fecha);
+                        const diasStr = textoAtraso(Math.round(diffMs / 86400000 * 10) / 10);
+                        return `<div class="week-task-mini" style="background:#fff8f8; border-left-color:#c62828; margin-bottom:0.5rem; padding:0.6rem 0.75rem; font-size:0.8rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:start; gap:6px; margin-bottom:5px;">
+                                <div style="flex:1; min-width:0;">
+                                    <div style="margin-bottom:2px;">
+                                        ${proyecto ? `<span style="background:var(--lavender); color:var(--purple); border-radius:8px; padding:1px 6px; font-size:0.68rem; font-weight:600; margin-right:3px;">${proyecto.nombre}</span>` : ''}
+                                        <span style="background:#ffebee; color:#c62828; border-radius:8px; padding:1px 6px; font-size:0.68rem; font-weight:600;">⏰ ${diasStr}</span>
+                                    </div>
+                                    <div style="font-weight:600;">${a.nombre}</div>
+                                    <div style="font-size:0.72rem; color:#c62828; margin-top:2px;">📅 Programada: ${new Date(a.fecha).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+                                </div>
+                                <button style="border:1px solid var(--purple); background:white; color:var(--purple); border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer; flex-shrink:0;" onclick="abrirModalActividad(${a.id})">✏️ Editar</button>
+                            </div>
+                            <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+                                <span style="font-size:0.72rem; color:#666; flex-shrink:0;">Completada el:</span>
+                                <input type="datetime-local" id="fechaCompletar-${a.id}" value="${nowStr}" style="border:1px solid #ddd; border-radius:5px; padding:3px 6px; font-size:0.75rem; flex:1; min-width:140px;">
+                                <button style="border:none; background:#43A047; color:white; border-radius:5px; padding:4px 10px; font-size:0.75rem; cursor:pointer; white-space:nowrap;" onclick="completarConFecha(${a.id})">✓ Completar</button>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
         }
 
         function htmlPanelSinAgendar(fechaSugeridaStr) {
@@ -2844,7 +2899,7 @@
             startDay.setDate(primerDia.getDate() + offsetLunes);
             const hoy = new Date();
 
-            let html = htmlPanelSinAgendar(fechaStr) + `
+            let html = htmlPanelAtrasadas() + htmlPanelSinAgendar(fechaStr) + `
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
                     <button class="btn btn-secondary btn-small" onclick="navegarMes(-1)">‹ Anterior</button>
                     <strong style="color:var(--purple); font-size:1.05rem;">${nombresMes[mes]} ${año}</strong>
@@ -2985,7 +3040,7 @@
             const lunes = new Date(fechaRef);
             lunes.setDate(fechaRef.getDate() + diffLunes);
 
-            let html = htmlPanelSinAgendar(fechaStr) + '<div class="week-view-container">';
+            let html = htmlPanelAtrasadas() + htmlPanelSinAgendar(fechaStr) + '<div class="week-view-container">';
 
             for (let i = 0; i < 7; i++) {
                 const fechaDia = new Date(lunes);
@@ -3266,6 +3321,38 @@
                                 <span style="color:#666; font-size:0.85rem;">📅 ${new Date(a.fecha).toLocaleDateString('es-CL',{weekday:'short',day:'2-digit',month:'2-digit'})} · ${a.duracion}h</span>
                             </div>
                         `;
+                    }).join('');
+                }
+            }
+
+            // HISTORIAL COMPLETADAS TARDE
+            const historialTarde = document.getElementById('historialTarde');
+            if (historialTarde) {
+                const tarde = appData.actividades
+                    .filter(a => a.completada && a.completadaTarde)
+                    .sort((a, b) => new Date(b.fechaCompletada) - new Date(a.fechaCompletada));
+                if (tarde.length === 0) {
+                    historialTarde.innerHTML = '<p style="text-align:center; color:var(--green);">✅ Sin actividades completadas tarde</p>';
+                } else {
+                    historialTarde.innerHTML = tarde.map(a => {
+                        const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
+                        const atrasoTexto = textoAtraso(a.diasAtraso);
+                        return `<div class="week-task-mini" style="background:#fff8f8; border-left-color:#E65100; padding:0.65rem 0.8rem; margin-bottom:0.5rem; font-size:0.82rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:start; gap:8px;">
+                                <div style="flex:1; min-width:0;">
+                                    <div style="margin-bottom:3px;">
+                                        ${proyecto ? `<span style="background:var(--lavender); color:var(--purple); border-radius:8px; padding:1px 6px; font-size:0.68rem; font-weight:600; margin-right:3px;">${proyecto.nombre}</span>` : ''}
+                                        <span style="background:#ffebe6; color:#E65100; border-radius:8px; padding:1px 6px; font-size:0.68rem; font-weight:600;">⏰ ${atrasoTexto}</span>
+                                    </div>
+                                    <div style="font-weight:600; text-decoration:line-through; color:#999;">${a.nombre}</div>
+                                    <div style="font-size:0.72rem; color:#888; margin-top:3px; line-height:1.6;">
+                                        📅 Programada: ${new Date(a.fecha).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}<br>
+                                        ✅ Completada: ${new Date(a.fechaCompletada).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+                                    </div>
+                                </div>
+                                <button style="border:1px solid #ccc; background:white; color:#666; border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer; flex-shrink:0;" onclick="toggleCompletada(${a.id})">↩ Reabrir</button>
+                            </div>
+                        </div>`;
                     }).join('');
                 }
             }
