@@ -838,8 +838,8 @@
                     <button class="btn btn-secondary" onclick="importarDatos()">📤 Importar Datos</button>
                 </div>
 
-                <h3 style="color: var(--purple); margin-bottom: 0.75rem;">⏰ Jornada de Trabajo</h3>
-                <p style="font-size:0.82rem; color:#888; margin-bottom:1rem;">Horas planificables por día. La agenda marcará en rojo los días que superen este límite. Usa 0 para días no laborables.</p>
+                <h3 style="color: var(--purple); margin-bottom: 0.75rem;">💼 Horas Laborales por día</h3>
+                <p style="font-size:0.82rem; color:#888; margin-bottom:1rem;">Horas de trabajo planificables. La agenda marcará en rojo si se supera. Usa 0 para días sin trabajo.</p>
                 <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:0.5rem; text-align:center; margin-bottom:2rem;">
                     <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Lun</div><input type="number" id="jornada1" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
                     <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Mar</div><input type="number" id="jornada2" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
@@ -848,6 +848,18 @@
                     <div><div style="font-size:0.75rem; font-weight:700; color:var(--purple); margin-bottom:4px;">Vie</div><input type="number" id="jornada5" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
                     <div><div style="font-size:0.75rem; font-weight:700; color:#aaa; margin-bottom:4px;">Sáb</div><input type="number" id="jornada6" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
                     <div><div style="font-size:0.75rem; font-weight:700; color:#aaa; margin-bottom:4px;">Dom</div><input type="number" id="jornada0" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                </div>
+
+                <h3 style="color: #388E3C; margin-bottom: 0.75rem;">🎨 Horas Recreativas por día</h3>
+                <p style="font-size:0.82rem; color:#888; margin-bottom:1rem;">Horas para actividades recreativas, descanso y bienestar. Usa 0 para días sin tiempo recreativo.</p>
+                <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:0.5rem; text-align:center; margin-bottom:2rem;">
+                    <div><div style="font-size:0.75rem; font-weight:700; color:#388E3C; margin-bottom:4px;">Lun</div><input type="number" id="jornadaRec1" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:#388E3C; margin-bottom:4px;">Mar</div><input type="number" id="jornadaRec2" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:#388E3C; margin-bottom:4px;">Mié</div><input type="number" id="jornadaRec3" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:#388E3C; margin-bottom:4px;">Jue</div><input type="number" id="jornadaRec4" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:#388E3C; margin-bottom:4px;">Vie</div><input type="number" id="jornadaRec5" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:#aaa; margin-bottom:4px;">Sáb</div><input type="number" id="jornadaRec6" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
+                    <div><div style="font-size:0.75rem; font-weight:700; color:#aaa; margin-bottom:4px;">Dom</div><input type="number" id="jornadaRec0" min="0" max="24" class="form-input" style="text-align:center; padding:0.4rem 0.25rem;" onchange="guardarConfig()"></div>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
@@ -953,6 +965,18 @@
                             <option value="h">h</option>
                             <option value="min">min</option>
                         </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tipo de actividad</label>
+                    <div style="display:flex; gap:1.5rem; margin-top:0.25rem;">
+                        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.95rem;">
+                            <input type="radio" name="actividadTipo" value="laboral" id="actividadTipoLaboral" checked> 💼 Laboral
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.95rem;">
+                            <input type="radio" name="actividadTipo" value="recreativa" id="actividadTipoRecreativa"> 🎨 Recreativa
+                        </label>
                     </div>
                 </div>
 
@@ -1104,6 +1128,18 @@
                     <select class="form-select" id="habitoProyecto">
                         <option value="">Sin proyecto</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tipo de actividad</label>
+                    <div style="display:flex; gap:1.5rem; margin-top:0.25rem;">
+                        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.95rem;">
+                            <input type="radio" name="habitoTipo" value="laboral" id="habitoTipoLaboral" checked> 💼 Laboral
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.95rem;">
+                            <input type="radio" name="habitoTipo" value="recreativa" id="habitoTipoRecreativa"> 🎨 Recreativa
+                        </label>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -1411,7 +1447,7 @@
             actividades: [],
             habitos: [],
             rituales: RITUALES_DEFAULT,
-            config: { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 } },
+            config: { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 }, jornadaRecreativa: { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 } },
             creencias: [
                 'Miedo al éxito',
                 'Miedo a la escasez',
@@ -1526,6 +1562,8 @@
                 document.getElementById('actividadFecha').value = a.fecha;
                 document.getElementById('actividadDuracion').value = a.duracion;
                 document.getElementById('actividadUnidad').value = a.unidad || 'h';
+                const tipoAct = a.tipo || 'laboral';
+                document.querySelector(`input[name="actividadTipo"][value="${tipoAct}"]`).checked = true;
                 document.getElementById('actividadPrioridad').value = a.prioridad;
                 if (selRitual) selRitual.value = a.ritualId || '';
                 document.getElementById('actividadLimitacion').value = a.limitacion || '';
@@ -1535,6 +1573,7 @@
                 document.getElementById('tituloModalActividad').textContent = 'Editar Actividad';
             } else {
                 document.getElementById('actividadUnidad').value = 'h';
+                document.querySelector('input[name="actividadTipo"][value="laboral"]').checked = true;
                 subtareasTemp = [];
                 renderizarSubtareasTemp();
                 document.getElementById('tituloModalActividad').textContent = 'Nueva Actividad';
@@ -1557,6 +1596,8 @@
                 document.getElementById('habitoHoraRecordatorio').value = h.horaRecordatorio || '';
                 document.getElementById('habitoProyecto').value = h.proyectoId || '';
                 document.getElementById('habitoRitual').value = h.ritualId || '';
+                const tipoH = h.tipo || 'laboral';
+                document.querySelector(`input[name="habitoTipo"][value="${tipoH}"]`).checked = true;
                 if (h.recordatorio) document.getElementById('grupoRecordatorio').style.display = 'block';
                 actualizarDiasSemana();
                 if (h.frecuencia === 'semanal') {
@@ -1950,6 +1991,7 @@
                 fecha: document.getElementById('actividadFecha').value,
                 duracion,
                 unidad,
+                tipo: document.querySelector('input[name="actividadTipo"]:checked')?.value || 'laboral',
                 prioridad: document.getElementById('actividadPrioridad').value,
                 ritualId: ritualActVal ? parseInt(ritualActVal) : null,
                 limitacion: document.getElementById('actividadLimitacion').value,
@@ -2124,6 +2166,7 @@
                 duracion: parseInt(document.getElementById('habitoDuracion').value),
                 unidad: document.getElementById('habitoUnidad').value,
                 hora: document.getElementById('habitoHora').value,
+                tipo: document.querySelector('input[name="habitoTipo"]:checked')?.value || 'laboral',
                 recordatorio: document.getElementById('habitoRecordatorio').checked,
                 horaRecordatorio: document.getElementById('habitoHoraRecordatorio').value,
                 fechaInicio: document.getElementById('habitoFechaInicio').value,
@@ -2518,9 +2561,7 @@
                 });
             });
 
-            const totalHoras = habitosDia.reduce((s, h) => s + duracionAHoras(h.duracion, h.unidad || 'min'), 0)
-                + actividadesDia.reduce((s, a) => s + duracionAHoras(a.duracion, a.unidad || 'h'), 0)
-                + subtareasDia.reduce((s, sub) => s + duracionAHoras(sub.duracion || 0, sub.unidad || 'min'), 0);
+            const horasTipoDia = calcularHorasDiaTipo(fechaDia);
 
             const itemsDia = [
                 ...habitosDia.map(h => ({ ...h, _tipo:'habito', _min: getMinutosDelDia(h.hora) })),
@@ -2531,16 +2572,22 @@
                 })
             ].sort((a, b) => a._min - b._min);
 
-            const jornada = getJornada(fechaDia);
-            const excede = totalHoras > jornada;
+            const jornadaLD = getJornada(fechaDia);
+            const jornadaRD = getJornadaRecreativa(fechaDia);
+            const excedeLD = horasTipoDia.laboral > jornadaLD;
+            const excedeRD = horasTipoDia.recreativa > jornadaRD;
+            const excede = excedeLD || excedeRD;
 
             let html = `
                 <div style="background:${esHoy ? '#EDE7F6' : 'var(--lavender-light)'}; border-radius:12px; padding:1.25rem; ${excede ? 'border:2px solid #ef9a9a;' : ''}">
                     <div style="text-align:center; margin-bottom:0.75rem;">
                         <div style="font-weight:700; color:${excede ? '#c62828' : 'var(--purple)'}; font-size:1.15rem;">${diasNombreLargo[diaValor]}</div>
                         <div style="font-size:0.85rem; color:#666; margin-top:2px;">${fechaLabel}</div>
-                        <div style="font-size:0.82rem; font-weight:600; color:${excede ? '#c62828' : '#666'}; margin-top:4px;">${totalHoras.toFixed(1)}h programadas${excede ? ' ⚠️' : ''}</div>
-                        ${excede ? `<div style="font-size:0.75rem; color:#c62828; padding:3px 8px; background:#ffebee; border-radius:6px; margin-top:4px; display:inline-block;">Excede jornada — revisa y reagenda</div>` : ''}
+                        <div style="display:flex; justify-content:center; gap:1rem; margin-top:5px; font-size:0.82rem; font-weight:600;">
+                            <span style="color:${excedeLD ? '#c62828' : '#555'};">💼 ${horasTipoDia.laboral.toFixed(1)}h laboral${excedeLD ? ' ⚠️' : ''}</span>
+                            <span style="color:${excedeRD ? '#c62828' : '#388E3C'};">🎨 ${horasTipoDia.recreativa.toFixed(1)}h recreativa${excedeRD ? ' ⚠️' : ''}</span>
+                        </div>
+                        ${excede ? `<div style="font-size:0.75rem; color:#c62828; padding:3px 8px; background:#ffebee; border-radius:6px; margin-top:4px; display:inline-block;">Excede jornada${excedeLD && excedeRD ? '' : excedeLD ? ' laboral' : ' recreativa'} — revisa y reagenda</div>` : ''}
                         ${itemsDia.length === 0 ? `<div style="color:#aaa; font-size:0.9rem; margin-top:1rem;">Sin actividades para este día</div>` : ''}
                     </div>
                     ${itemsDia.map(item => {
@@ -2605,6 +2652,7 @@
                                         <span style="font-size:0.68rem; background:var(--lavender); color:var(--purple); border-radius:10px; padding:1px 7px; font-weight:600;">${proyecto?.nombre || 'Sin proyecto'}</span>
                                         ${atrasado ? `<span style="font-size:0.68rem; background:#ffebee; color:#c62828; border-radius:10px; padding:1px 6px; font-weight:600;">ATRASADA</span>` : ''}
                                         ${ritual ? `<span style="font-size:0.68rem; background:${getRitualColor(a.ritualId)}; color:white; border-radius:10px; padding:1px 6px;">${ritual.numero || ritual.nombre}</span>` : ''}
+                                        <span style="font-size:0.68rem; background:${a.tipo === 'recreativa' ? '#E8F5E9' : '#EDE7F6'}; color:${a.tipo === 'recreativa' ? '#388E3C' : 'var(--purple)'}; border-radius:10px; padding:1px 6px;">${a.tipo === 'recreativa' ? '🎨' : '💼'}</span>
                                     </div>
                                     <div style="font-weight:600; ${a.completada ? 'text-decoration:line-through; color:#999;' : ''}">📌 ${new Date(a.fecha).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})} &nbsp;${a.nombre}</div>
                                     <div style="font-size:0.75rem; color:#888; margin-top:2px;">${duracionTexto(a.duracion, a.unidad||'h')}${a.limitacion ? ` · 🧠 ${a.limitacion}` : ''}</div>
@@ -2635,10 +2683,54 @@
                         </div>`;
                     }).join('')}
                 </div>`;
+
+            // Panel "Sin agendar" con asignación de fecha inline
+            const sinAgendarDia = appData.actividades.filter(a => !a.fecha && !a.completada)
+                .sort((a, b) => new Date(a.creado || 0) - new Date(b.creado || 0));
+            if (sinAgendarDia.length > 0) {
+                const hoyStr = fechaStr + 'T09:00';
+                html += `<div style="margin-top:1rem; background:var(--lavender-light); border-radius:10px; padding:0.9rem;">
+                    <div style="font-weight:700; color:var(--purple); margin-bottom:0.6rem; font-size:0.9rem;">📋 Por agendar (${sinAgendarDia.length})</div>
+                    ${sinAgendarDia.map(a => {
+                        const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
+                        const dias = diasSinAgendar(a);
+                        const col = colorSinAgendar(dias);
+                        return `<div class="week-task-mini" style="background:${col.bg}; border-left-color:${col.border}; margin-bottom:0.5rem; padding:0.55rem 0.7rem; font-size:0.8rem;">
+                            <div style="font-weight:600; margin-bottom:4px;">${a.nombre}${proyecto ? ` <span style="font-weight:400; color:#888;">· ${proyecto.nombre}</span>` : ''}</div>
+                            <div style="font-size:0.7rem; color:${col.texto}; margin-bottom:6px;">${col.label}${a.duracion ? ` · ${duracionTexto(a.duracion, a.unidad||'h')}` : ''} · ${a.tipo === 'recreativa' ? '🎨 Recreativa' : '💼 Laboral'}</div>
+                            <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+                                <input type="datetime-local" id="fechaAsignar-${a.id}" value="${hoyStr}" style="border:1px solid #ddd; border-radius:5px; padding:3px 6px; font-size:0.75rem; flex:1; min-width:150px;">
+                                <button style="border:none; background:var(--purple); color:white; border-radius:5px; padding:4px 10px; font-size:0.75rem; cursor:pointer; white-space:nowrap;" onclick="asignarFechaDesdeAgenda(${a.id})">📅 Asignar</button>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+            }
+
             contenedor.innerHTML = html;
         }
 
+        function asignarFechaDesdeAgenda(id) {
+            const input = document.getElementById(`fechaAsignar-${id}`);
+            if (!input || !input.value) { alert('Selecciona una fecha y hora'); return; }
+            const a = appData.actividades.find(a => a.id === id);
+            if (!a) return;
+            const solapadas = detectarSolapamiento(input.value, a.duracion, a.unidad || 'h', id);
+            if (solapadas.length > 0) {
+                const nombres = solapadas.map(s => `"${s.nombre}"`).join(', ');
+                if (!confirm(`⚠️ Se superpone con ${nombres}. ¿Asignar igual?`)) return;
+            }
+            a.fecha = input.value;
+            guardarDatos();
+            renderizarAgenda();
+            renderizarDashboard();
+        }
+
         function calcularHorasDia(fechaDia) {
+            return calcularHorasDiaTipo(fechaDia).total;
+        }
+
+        function calcularHorasDia_UNUSED(fechaDia) {
             const diaValor = fechaDia.getDay();
             const hHabitos = appData.habitos.filter(h => {
                 const inicio = new Date(h.fechaInicio + 'T00:00:00');
@@ -2882,10 +2974,7 @@
                     });
                 });
 
-                const totalHoras = habitosDia.reduce((s, h) => s + duracionAHoras(h.duracion, h.unidad || 'min'), 0)
-                    + actividadesDia.reduce((s, a) => s + duracionAHoras(a.duracion, a.unidad || 'h'), 0)
-                    + subtareasDia.reduce((s, sub) => s + duracionAHoras(sub.duracion || 0, sub.unidad || 'min'), 0);
-
+                const horasTipo = calcularHorasDiaTipo(fechaDia);
                 const fechaLabel = fechaDia.toLocaleDateString('es-CL', {day:'2-digit', month:'2-digit'});
 
                 // Combinar y ordenar por hora
@@ -2898,12 +2987,20 @@
                     })
                 ].sort((a, b) => a._min - b._min);
 
-                const jornada = getJornada(fechaDia);
-                const excedeS = totalHoras > jornada;
+                const jornadaL = getJornada(fechaDia);
+                const jornadaR = getJornadaRecreativa(fechaDia);
+                const excedeL = horasTipo.laboral > jornadaL;
+                const excedeR = horasTipo.recreativa > jornadaR;
+                const excedeS = excedeL || excedeR;
                 html += `<div class="week-day-column" style="${esHoy ? 'background:#EDE7F6;' : ''}${excedeS ? 'border:2px solid #ef9a9a;' : ''}">
                     <div class="week-day-header" style="${excedeS ? 'color:#c62828;' : ''}">${dias[i]}<br><small style="font-weight:400;">${fechaLabel}</small></div>
-                    <div class="week-day-total" style="${excedeS ? 'color:#c62828; font-weight:700;' : ''}">${totalHoras.toFixed(1)}h${excedeS ? ' ⚠️' : ''}</div>
-                    ${excedeS ? `<div style="font-size:0.58rem; color:#c62828; text-align:center; padding:2px 4px; background:#ffebee; border-radius:4px; margin-bottom:4px; line-height:1.3;">Revisa y reagenda, excede jornada</div>` : ''}
+                    <div class="week-day-total" style="font-size:0.65rem; line-height:1.5;">
+                        <span style="color:${excedeL ? '#c62828' : '#555'};">💼${horasTipo.laboral.toFixed(1)}h</span>
+                        <span style="color:#ccc;"> / </span>
+                        <span style="color:${excedeR ? '#c62828' : '#388E3C'};">🎨${horasTipo.recreativa.toFixed(1)}h</span>
+                        ${excedeS ? '⚠️' : ''}
+                    </div>
+                    ${excedeS ? `<div style="font-size:0.56rem; color:#c62828; text-align:center; padding:2px 4px; background:#ffebee; border-radius:4px; margin-bottom:4px; line-height:1.3;">Excede jornada${excedeL && excedeR ? '' : excedeL ? ' laboral' : ' recreativa'}</div>` : ''}
                     ${itemsDia.map(item => {
                         if (item._tipo === 'habito') {
                             const h = item;
@@ -3357,10 +3454,13 @@
                     datosParseados.rituales = RITUALES_DEFAULT;
                 }
                 if (!datosParseados.config) {
-                    datosParseados.config = { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 } };
+                    datosParseados.config = { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 }, jornadaRecreativa: { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 } };
                 } else if (typeof datosParseados.config.jornadaHoras === 'number') {
                     const v = datosParseados.config.jornadaHoras;
                     datosParseados.config.jornadaHoras = { 0: v, 1: v, 2: v, 3: v, 4: v, 5: v, 6: v };
+                }
+                if (!datosParseados.config.jornadaRecreativa) {
+                    datosParseados.config.jornadaRecreativa = { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 };
                 }
                 Object.assign(appData, datosParseados);
             }
@@ -3373,21 +3473,67 @@
             return Number(j || 8);
         }
 
+        function getJornadaRecreativa(fechaDia) {
+            const diaValor = fechaDia ? fechaDia.getDay() : new Date().getDay();
+            const j = appData.config?.jornadaRecreativa;
+            if (j && typeof j === 'object') return Number(j[diaValor] ?? 0);
+            return 0;
+        }
+
+        function calcularHorasDiaTipo(fechaDia) {
+            const diaValor = fechaDia.getDay();
+            let laboral = 0, recreativa = 0;
+            appData.habitos.filter(h => {
+                const inicio = new Date(h.fechaInicio + 'T00:00:00');
+                if (fechaDia < inicio) return false;
+                if (h.frecuencia === 'diaria') return true;
+                if (h.frecuencia === 'semanal') return h.diasSemana.includes(diaValor);
+                if (h.frecuencia === 'mensual') return fechaDia.getDate() === inicio.getDate();
+                return false;
+            }).forEach(h => {
+                const horas = duracionAHoras(h.duracion, h.unidad || 'min');
+                if (h.tipo === 'recreativa') recreativa += horas; else laboral += horas;
+            });
+            appData.actividades.filter(a => {
+                if (!a.fecha || new Date(a.fecha).toDateString() !== fechaDia.toDateString()) return false;
+                const todasConFecha = a.subtareas && a.subtareas.length > 0 && a.subtareas.every(s => s.fechaPropia && s.fecha);
+                return !todasConFecha;
+            }).forEach(a => {
+                const horas = duracionAHoras(a.duracion, a.unidad || 'h');
+                if (a.tipo === 'recreativa') recreativa += horas; else laboral += horas;
+            });
+            appData.actividades.forEach(a => {
+                (a.subtareas || []).forEach(s => {
+                    if (s.fechaPropia && s.fecha && new Date(s.fecha).toDateString() === fechaDia.toDateString()) {
+                        const horas = duracionAHoras(s.duracion || 0, s.unidad || 'min');
+                        if (a.tipo === 'recreativa') recreativa += horas; else laboral += horas;
+                    }
+                });
+            });
+            return { laboral, recreativa, total: laboral + recreativa };
+        }
+
         function poblarJornada() {
             const j = appData.config?.jornadaHoras || {};
+            const r = appData.config?.jornadaRecreativa || {};
             [0, 1, 2, 3, 4, 5, 6].forEach(d => {
                 const inp = document.getElementById(`jornada${d}`);
                 if (inp) inp.value = typeof j === 'object' ? (j[d] ?? 0) : (j || 8);
+                const inpR = document.getElementById(`jornadaRec${d}`);
+                if (inpR) inpR.value = typeof r === 'object' ? (r[d] ?? 0) : 0;
             });
         }
 
         function guardarConfig() {
-            const jornadas = {};
+            const jornadas = {}, jornadasRec = {};
             [0, 1, 2, 3, 4, 5, 6].forEach(d => {
                 const val = parseInt(document.getElementById(`jornada${d}`)?.value) || 0;
                 jornadas[d] = Math.min(24, Math.max(0, val));
+                const valR = parseInt(document.getElementById(`jornadaRec${d}`)?.value) || 0;
+                jornadasRec[d] = Math.min(24, Math.max(0, valR));
             });
             appData.config.jornadaHoras = jornadas;
+            appData.config.jornadaRecreativa = jornadasRec;
             guardarDatos();
             renderizarAgenda();
         }
@@ -3486,7 +3632,8 @@
                 if (tsRemoto > tsLocal) {
                     // Nube es más nueva: usar datos remotos
                     if (!remoto.rituales || remoto.rituales.length === 0) remoto.rituales = RITUALES_DEFAULT;
-                    if (!remoto.config) remoto.config = { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 } };
+                    if (!remoto.config) remoto.config = { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 }, jornadaRecreativa: { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 } };
+                    if (!remoto.config.jornadaRecreativa) remoto.config.jornadaRecreativa = { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 };
                     Object.assign(appData, remoto);
                     localStorage.setItem('appDataSER', JSON.stringify(appData));
                     renderizarTodo();
