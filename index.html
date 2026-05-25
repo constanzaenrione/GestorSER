@@ -3189,13 +3189,23 @@
             } else {
                 listaAtrasadas.innerHTML = actividadesAtrasadas.map(a => {
                     const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
+                    const ahora = new Date();
+                    const diffMs = ahora - new Date(a.fecha);
+                    const diasStr = textoAtraso(Math.round(diffMs / 86400000 * 10) / 10);
                     return `
-                        <div class="task-item atrasada">
-                            <span class="badge badge-red">${proyecto?.nombre || 'Sin proyecto'}</span>
-                            <h4 style="margin-top: 0.5rem;">${a.nombre}</h4>
-                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">
-                                📅 ${new Date(a.fecha).toLocaleString('es-CL')}
-                            </p>
+                        <div class="task-item atrasada" style="display:flex; justify-content:space-between; align-items:start; gap:0.75rem;">
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.3rem;">
+                                    <span class="badge badge-red">${proyecto?.nombre || 'Sin proyecto'}</span>
+                                    ${diasStr ? `<span style="font-size:0.72rem; background:#E65100; color:white; border-radius:10px; padding:1px 7px; font-weight:600;">⏰ ${diasStr}</span>` : ''}
+                                </div>
+                                <h4>${a.nombre}</h4>
+                                <p style="font-size: 0.85rem; color:#666; margin-top: 0.25rem;">📅 ${new Date(a.fecha).toLocaleString('es-CL')}</p>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0;">
+                                <button class="btn btn-small btn-primary" onclick="toggleCompletada(${a.id})">✓ Completar</button>
+                                <button class="btn btn-small btn-edit" onclick="abrirModalActividad(${a.id})">Editar</button>
+                            </div>
                         </div>
                     `;
                 }).join('');
