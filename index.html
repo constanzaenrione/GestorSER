@@ -2261,24 +2261,33 @@
                 const proyecto = h.proyectoId ? appData.proyectos.find(p => p.id === h.proyectoId) : null;
                 const ritual = h.ritualId ? appData.rituales.find(r => r.id === h.ritualId) : null;
                 const ritualBadge = ritual ? `<span class="ritual-badge" style="background:${getRitualColor(h.ritualId)}; cursor:pointer;" onclick="event.stopPropagation(); verRitualModal(${h.ritualId})">${ritual.numero || ritual.nombre.substring(0,6)}</span>` : '';
+                const finalizado = !!h.fechaFin;
                 return `
-                    <div class="task-item" ${ritual ? `onclick="verRitualModal(${h.ritualId})" style="cursor:pointer;"` : ''}>
+                    <div class="task-item ${finalizado ? 'completada' : ''}" ${ritual && !finalizado ? `onclick="verRitualModal(${h.ritualId})" style="cursor:pointer;"` : ''}>
                         <div style="display: flex; justify-content: space-between; align-items: start; gap:0.5rem;">
                             <div style="flex: 1;">
                                 <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.25rem;">
-                                    <h3 style="color: var(--purple);">${h.nombre}</h3>
+                                    <h3 style="color:${finalizado ? '#999' : 'var(--purple)'}; ${finalizado ? 'text-decoration:line-through;' : ''}">${h.nombre}</h3>
+                                    ${finalizado ? `<span class="badge" style="background:#607D8B; color:white;">Finalizado ${new Date(h.fechaFin + 'T00:00:00').toLocaleDateString('es-CL')}</span>` : ''}
                                     ${ritualBadge}
                                 </div>
-                                <p style="font-size:0.9rem;">
+                                <p style="font-size:0.9rem; color:${finalizado ? '#aaa' : ''};">
                                     🔄 ${frecuenciaTexto} · ⏱️ ${duracionTexto(h.duracion, h.unidad || 'min')} · ⏰ ${h.hora}<br>
                                     📅 Desde: ${new Date(h.fechaInicio + 'T00:00:00').toLocaleDateString('es-CL')}
+                                    ${h.fechaFin ? ` hasta ${new Date(h.fechaFin + 'T00:00:00').toLocaleDateString('es-CL')}` : ''}
                                     ${proyecto ? `<br>🎯 ${proyecto.nombre}` : ''}
                                     ${h.recordatorio ? `<br>🔔 ${h.horaRecordatorio}` : ''}
                                 </p>
                             </div>
-                            <div style="display:flex; gap:0.4rem;">
+                            <div style="display:flex; flex-direction:column; gap:0.3rem; align-items:flex-end;">
+                                ${!finalizado ? `
                                 <button class="btn btn-edit btn-small" onclick="event.stopPropagation(); abrirModalHabito(${h.id})">Editar</button>
                                 <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); duplicarHabito(${h.id})">Duplicar</button>
+                                <button class="btn btn-small" style="background:#607D8B; color:white; border:none;" onclick="event.stopPropagation(); finalizarHabito(${h.id})">Finalizar</button>
+                                ` : `
+                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); reactivarHabito(${h.id})">Reactivar</button>
+                                `}
+                                <button class="btn btn-delete btn-small" onclick="event.stopPropagation(); eliminarHabito(${h.id})">Eliminar</button>
                             </div>
                         </div>
                     </div>
@@ -2593,6 +2602,7 @@
             const habitosDia = appData.habitos.filter(h => {
                 const inicio = new Date(h.fechaInicio + 'T00:00:00');
                 if (fechaDia < inicio) return false;
+                if (h.fechaFin && new Date(h.fechaFin + 'T23:59:59') < fechaDia) return false;
                 if (h.frecuencia === 'diaria') return true;
                 if (h.frecuencia === 'semanal') return h.diasSemana.includes(diaValor);
                 if (h.frecuencia === 'mensual') return fechaDia.getDate() === inicio.getDate();
@@ -3052,6 +3062,7 @@
                 const habitosDia = appData.habitos.filter(h => {
                     const inicio = new Date(h.fechaInicio + 'T00:00:00');
                     if (fechaDia < inicio) return false;
+                    if (h.fechaFin && new Date(h.fechaFin + 'T23:59:59') < fechaDia) return false;
                     if (h.frecuencia === 'diaria') return true;
                     if (h.frecuencia === 'semanal') return h.diasSemana.includes(diaValor);
                     if (h.frecuencia === 'mensual') return fechaDia.getDate() === inicio.getDate();
@@ -3367,6 +3378,36 @@
         }
 
         // COMPLETAR HÁBITO POR FECHA
+        function finalizarHabito(id) {
+            const h = appData.habitos.find(h => h.id === id);
+            if (!h) return;
+            const hoy = new Date().toISOString().split('T')[0];
+            const fecha = prompt('¿Desde qué fecha finaliza este hábito? (AAAA-MM-DD)', hoy);
+            if (!fecha) return;
+            h.fechaFin = fecha;
+            guardarDatos();
+            renderizarHabitos();
+            renderizarAgenda();
+        }
+
+        function reactivarHabito(id) {
+            const h = appData.habitos.find(h => h.id === id);
+            if (!h) return;
+            delete h.fechaFin;
+            guardarDatos();
+            renderizarHabitos();
+            renderizarAgenda();
+        }
+
+        function eliminarHabito(id) {
+            if (!confirm('¿Eliminar este hábito definitivamente? Esta acción no se puede deshacer.')) return;
+            appData.habitos = appData.habitos.filter(h => h.id !== id);
+            guardarDatos();
+            renderizarHabitos();
+            renderizarDashboard();
+            renderizarAgenda();
+        }
+
         function toggleHabitoCompletado(habitoId, fechaStr) {
             const h = appData.habitos.find(h => h.id === habitoId);
             if (!h) return;
@@ -3608,6 +3649,7 @@
             appData.habitos.filter(h => {
                 const inicio = new Date(h.fechaInicio + 'T00:00:00');
                 if (fechaDia < inicio) return false;
+                if (h.fechaFin && new Date(h.fechaFin + 'T23:59:59') < fechaDia) return false;
                 if (h.frecuencia === 'diaria') return true;
                 if (h.frecuencia === 'semanal') return h.diasSemana.includes(diaValor);
                 if (h.frecuencia === 'mensual') return fechaDia.getDate() === inicio.getDate();
