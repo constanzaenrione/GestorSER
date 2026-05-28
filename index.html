@@ -678,6 +678,7 @@
         <button class="nav-tab" onclick="mostrarVista('agenda')">📅 Agenda</button>
         <button class="nav-tab" onclick="mostrarVista('habitos')">⚡ Hábitos</button>
         <button class="nav-tab" onclick="mostrarVista('rituales')">🌟 Rituales</button>
+        <button class="nav-tab" onclick="mostrarVista('diario')">📓 Diario</button>
         <button class="nav-tab" onclick="mostrarVista('parametros')">⚙️ Parámetros</button>
     </div>
 
@@ -876,6 +877,68 @@
                     <div id="listaCreencias"></div>
                 </div>
             </div>
+        <!-- DIARIO -->
+        <div id="diario" class="view">
+            <div class="card">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+                    <button class="btn btn-secondary btn-small" onclick="navegarDiario(-1)">‹ Anterior</button>
+                    <div style="text-align:center; flex:1; padding:0 0.5rem;">
+                        <div id="diarioFechaTitulo" style="font-weight:700; color:var(--purple); font-size:0.95rem; text-transform:capitalize;"></div>
+                        <input type="date" id="diarioFechaInput" class="form-input" style="margin-top:4px; text-align:center; font-size:0.82rem; padding:3px 6px;" onchange="fechaDiarioActual=this.value; cargarEntradaDiario(this.value);">
+                    </div>
+                    <button class="btn btn-secondary btn-small" onclick="navegarDiario(1)">Siguiente ›</button>
+                </div>
+
+                <div style="margin-bottom:1.25rem;">
+                    <div style="font-weight:700; color:var(--purple); margin-bottom:0.6rem; font-size:0.95rem;">¿Cómo estoy hoy?</div>
+                    <div id="estadoInternoSelector" style="display:flex; gap:3px; justify-content:space-between;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="font-size:0.88rem;">✍️ Cómo me sentí hoy (en mis propias palabras)</label>
+                    <textarea class="form-textarea" id="diarioNota" placeholder="Describe con tus propias palabras cómo fue tu día internamente..." style="min-height:70px;"></textarea>
+                </div>
+
+                <div style="margin-bottom:1.25rem;">
+                    <div style="font-weight:700; color:var(--purple); margin-bottom:0.5rem; font-size:0.88rem;">⚡ Tensión corporal</div>
+                    <div style="font-size:0.72rem; color:#888; margin-bottom:6px;">1 = sin tensión · 10 = tensión máxima</div>
+                    <div id="tensionSelector" style="display:flex; gap:3px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="font-size:0.88rem;">🧱 Bloqueos del día</label>
+                    <textarea class="form-textarea" id="diarioBloqueos" placeholder="¿Qué me frenó hoy? ¿Qué se me hizo difícil?" style="min-height:60px;"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="font-size:0.88rem;">🚀 Éxitos del día</label>
+                    <textarea class="form-textarea" id="diarioExitos" placeholder="¿Qué logré hoy? ¿De qué me enorgullezco?" style="min-height:60px;"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="font-size:0.88rem;">🙏 Lo que agradezco hoy</label>
+                    <textarea class="form-textarea" id="diarioAgradezco" placeholder="¿Qué cosas, personas o momentos de hoy te merecen gratitud?" style="min-height:60px;"></textarea>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:1rem; margin-top:0.5rem;">
+                    <button class="btn btn-primary" onclick="guardarEntradaDiario()">💾 Guardar registro</button>
+                    <span id="diarioIndicador" style="font-size:0.82rem; color:var(--green); font-weight:600;"></span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <h2 class="card-title" style="margin:0;">📈 Mis Ciclos</h2>
+                    <button class="btn btn-secondary btn-small" onclick="exportarDiario()">📥 Exportar CSV</button>
+                </div>
+                <p style="font-size:0.8rem; color:#888; margin-bottom:0.75rem;">Visualiza tu patrón de energía e identifica cuánto duran tus ciclos altos y bajos.</p>
+                <div style="position:relative; width:100%;">
+                    <canvas id="graficoCiclos" style="width:100%; display:block; border-radius:8px; background:#fafafa;"></canvas>
+                </div>
+                <div id="proyeccionCiclos" style="margin-top:0.75rem;"></div>
+            </div>
+        </div>
+
         </div>
     </div>
 
@@ -1451,6 +1514,7 @@
             proyectos: [],
             actividades: [],
             habitos: [],
+            diario: [],
             rituales: RITUALES_DEFAULT,
             config: { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 }, jornadaRecreativa: { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 } },
             creencias: [
@@ -1524,6 +1588,7 @@
                 renderizarCreencias();
                 poblarJornada();
             }
+            if (vista === 'diario') mostrarDiario();
         }
 
         // MODALES
@@ -3625,6 +3690,7 @@
                 if (!datosParseados.config.jornadaRecreativa) {
                     datosParseados.config.jornadaRecreativa = { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 };
                 }
+                if (!datosParseados.diario) datosParseados.diario = [];
                 Object.assign(appData, datosParseados);
             }
         }
@@ -3723,6 +3789,272 @@
             renderizarCreencias();
             poblarJornada();
         }
+
+        // ===================== DIARIO =====================
+        let fechaDiarioActual = new Date().toISOString().split('T')[0];
+        let _estadoInternoSel = null;
+        let _tensionCorpSel = null;
+
+        const ESTADO_INTERNO_OPTS = [
+            { valor: -3, emoji: '😰', label: 'Temerosa,\nsin energía',    color: '#B71C1C' },
+            { valor: -2, emoji: '😔', label: 'Disgustada,\ntriste',       color: '#E53935' },
+            { valor: -1, emoji: '😕', label: 'Sentimientos\ndesagradables', color: '#FF7043' },
+            { valor:  0, emoji: '😐', label: 'Neutro',                    color: '#9E9E9E' },
+            { valor:  1, emoji: '🙂', label: 'Sentimientos\nagradables',  color: '#66BB6A' },
+            { valor:  2, emoji: '😊', label: 'Feliz, con\nenergía',       color: '#43A047' },
+            { valor:  3, emoji: '🌟', label: 'Optimista,\nexpansiva',     color: '#7B1FA2' }
+        ];
+
+        function mostrarDiario() {
+            cargarEntradaDiario(fechaDiarioActual);
+            setTimeout(() => renderizarGraficoCiclos(), 80);
+        }
+
+        function navegarDiario(delta) {
+            const d = new Date(fechaDiarioActual + 'T00:00:00');
+            d.setDate(d.getDate() + delta);
+            fechaDiarioActual = d.toISOString().split('T')[0];
+            cargarEntradaDiario(fechaDiarioActual);
+        }
+
+        function cargarEntradaDiario(fecha) {
+            fechaDiarioActual = fecha;
+            const inp = document.getElementById('diarioFechaInput');
+            if (inp) inp.value = fecha;
+            const d = new Date(fecha + 'T00:00:00');
+            const tit = document.getElementById('diarioFechaTitulo');
+            if (tit) tit.textContent = d.toLocaleDateString('es-CL', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+            const entry = (appData.diario || []).find(e => e.fecha === fecha);
+            _estadoInternoSel = (entry?.estadoInterno !== undefined && entry?.estadoInterno !== null) ? entry.estadoInterno : null;
+            _tensionCorpSel = entry?.tensionCorporal ?? null;
+
+            renderizarEstadoInternoSelector();
+            renderizarTensionSelector();
+
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+            set('diarioNota', entry?.nota);
+            set('diarioBloqueos', entry?.bloqueos);
+            set('diarioExitos', entry?.exitos);
+            set('diarioAgradezco', entry?.agradezco);
+
+            const ind = document.getElementById('diarioIndicador');
+            if (ind) { ind.textContent = entry ? '✓ Guardado' : ''; }
+        }
+
+        function renderizarEstadoInternoSelector() {
+            const cont = document.getElementById('estadoInternoSelector');
+            if (!cont) return;
+            cont.innerHTML = ESTADO_INTERNO_OPTS.map(opt => {
+                const sel = _estadoInternoSel === opt.valor;
+                return `<div onclick="selEstadoInterno(${opt.valor})" style="
+                    display:flex; flex-direction:column; align-items:center; gap:2px;
+                    padding:6px 2px; border-radius:10px; cursor:pointer; flex:1; min-width:0;
+                    background:${sel ? opt.color + '22' : 'transparent'};
+                    border:2px solid ${sel ? opt.color : '#eee'};
+                    transition:all 0.15s;">
+                    <span style="font-size:${sel ? '1.65rem' : '1.3rem'}; line-height:1; transition:font-size 0.15s;">${opt.emoji}</span>
+                    <span style="font-size:0.52rem; color:${sel ? opt.color : '#bbb'}; text-align:center; line-height:1.2; font-weight:${sel ? '700' : '400'}; white-space:pre-line;">${opt.label}</span>
+                    <span style="font-size:0.68rem; font-weight:700; color:${sel ? opt.color : '#ccc'};">${opt.valor > 0 ? '+' : ''}${opt.valor}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function renderizarTensionSelector() {
+            const cont = document.getElementById('tensionSelector');
+            if (!cont) return;
+            const colores = ['#43A047','#66BB6A','#8BC34A','#CDDC39','#FFEB3B','#FFC107','#FF9800','#FF5722','#F44336','#B71C1C'];
+            cont.innerHTML = Array.from({length:10}, (_, i) => {
+                const val = i + 1;
+                const sel = _tensionCorpSel === val;
+                return `<div onclick="selTension(${val})" style="
+                    display:flex; flex-direction:column; align-items:center; gap:3px;
+                    padding:5px 1px; border-radius:8px; cursor:pointer; flex:1;
+                    background:${sel ? colores[i] + '33' : 'transparent'};
+                    border:2px solid ${sel ? colores[i] : '#eee'};">
+                    <div style="width:20px; height:20px; border-radius:50%; background:${sel ? colores[i] : '#eee'};"></div>
+                    <span style="font-size:0.68rem; font-weight:${sel ? '700' : '400'}; color:${sel ? colores[i] : '#bbb'};">${val}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function selEstadoInterno(valor) {
+            _estadoInternoSel = _estadoInternoSel === valor ? null : valor;
+            renderizarEstadoInternoSelector();
+        }
+
+        function selTension(valor) {
+            _tensionCorpSel = _tensionCorpSel === valor ? null : valor;
+            renderizarTensionSelector();
+        }
+
+        function guardarEntradaDiario() {
+            if (!appData.diario) appData.diario = [];
+            const idx = appData.diario.findIndex(e => e.fecha === fechaDiarioActual);
+            const entry = {
+                fecha: fechaDiarioActual,
+                estadoInterno: _estadoInternoSel,
+                tensionCorporal: _tensionCorpSel,
+                nota: document.getElementById('diarioNota')?.value || '',
+                bloqueos: document.getElementById('diarioBloqueos')?.value || '',
+                exitos: document.getElementById('diarioExitos')?.value || '',
+                agradezco: document.getElementById('diarioAgradezco')?.value || '',
+                guardado: new Date().toISOString()
+            };
+            if (idx >= 0) { appData.diario[idx] = entry; } else { appData.diario.push(entry); }
+            guardarDatos();
+            const ind = document.getElementById('diarioIndicador');
+            if (ind) { ind.textContent = '✓ Guardado'; ind.style.color = 'var(--green)'; }
+            renderizarGraficoCiclos();
+        }
+
+        function renderizarGraficoCiclos() {
+            const canvas = document.getElementById('graficoCiclos');
+            if (!canvas) return;
+            const datos = (appData.diario || [])
+                .filter(e => e.estadoInterno !== null && e.estadoInterno !== undefined)
+                .sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+            const W = canvas.clientWidth || canvas.parentElement?.clientWidth || 340;
+            const H = 200;
+            canvas.width = W;
+            canvas.height = H;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, W, H);
+
+            if (datos.length < 2) {
+                ctx.fillStyle = '#bbb'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+                ctx.fillText('Registra al menos 2 días para ver el gráfico', W/2, H/2);
+                const proy = document.getElementById('proyeccionCiclos');
+                if (proy) proy.innerHTML = '<p style="color:#aaa;font-size:0.82rem;text-align:center;">Registra más días para ver la proyección.</p>';
+                return;
+            }
+
+            const PAD = { top:20, right:20, bottom:32, left:30 };
+            const gW = W - PAD.left - PAD.right;
+            const gH = H - PAD.top - PAD.bottom;
+            const n = datos.length;
+            const xS = i => PAD.left + (i / (n-1)) * gW;
+            const yS = v => PAD.top + gH/2 - (v/3) * (gH/2);
+
+            // Grid
+            [-3,-2,-1,0,1,2,3].forEach(v => {
+                ctx.strokeStyle = v === 0 ? '#bbb' : '#eee'; ctx.lineWidth = v === 0 ? 1.5 : 1;
+                if (v === 0) { ctx.setLineDash([5,4]); } else { ctx.setLineDash([]); }
+                ctx.beginPath(); ctx.moveTo(PAD.left, yS(v)); ctx.lineTo(W-PAD.right, yS(v)); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = v === 0 ? '#555' : '#ccc';
+                ctx.font = `${v === 0 ? 'bold ' : ''}10px sans-serif`; ctx.textAlign = 'right';
+                ctx.fillText((v > 0 ? '+' : '') + v, PAD.left - 4, yS(v) + 3);
+            });
+
+            // Colored line segments
+            ctx.lineWidth = 2.5;
+            for (let i = 0; i < n-1; i++) {
+                const v1 = datos[i].estadoInterno, v2 = datos[i+1].estadoInterno;
+                ctx.strokeStyle = ((v1+v2)/2) >= 0 ? '#43A047' : '#E53935';
+                ctx.beginPath(); ctx.moveTo(xS(i), yS(v1)); ctx.lineTo(xS(i+1), yS(v2)); ctx.stroke();
+            }
+
+            // Data points
+            datos.forEach((d, i) => {
+                ctx.beginPath(); ctx.arc(xS(i), yS(d.estadoInterno), 4, 0, Math.PI*2);
+                ctx.fillStyle = d.estadoInterno >= 0 ? '#43A047' : '#E53935'; ctx.fill();
+                ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.stroke();
+            });
+
+            // X labels
+            ctx.fillStyle = '#999'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+            const step = Math.max(1, Math.floor(n/6));
+            datos.forEach((d, i) => {
+                if (i === 0 || i === n-1 || i % step === 0) {
+                    const p = d.fecha.split('-');
+                    ctx.fillText(`${p[2]}/${p[1]}`, xS(i), H - PAD.bottom + 14);
+                }
+            });
+
+            // Projection
+            const proyHTML = calcularProyeccionCiclos(datos);
+            const proy = document.getElementById('proyeccionCiclos');
+            if (proy) proy.innerHTML = proyHTML;
+        }
+
+        function calcularProyeccionCiclos(datos) {
+            if (datos.length < 4) return '<p style="color:#aaa;font-size:0.82rem;text-align:center;">Necesitas al menos 4 registros para proyecciones.</p>';
+
+            // Detect runs
+            const runs = [];
+            let sign = datos[0].estadoInterno >= 0 ? 1 : -1, start = 0;
+            for (let i = 1; i <= datos.length; i++) {
+                const s = i < datos.length ? (datos[i].estadoInterno >= 0 ? 1 : -1) : null;
+                if (s !== sign || i === datos.length) {
+                    runs.push({ sign, length: i - start }); sign = s; start = i;
+                }
+            }
+            if (runs.length < 2) return '<p style="color:#aaa;font-size:0.82rem;text-align:center;">Registra más días para detectar ciclos.</p>';
+
+            const completed = runs.slice(0, -1);
+            const avgLen = (arr) => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+            const avgPos = avgLen(completed.filter(r=>r.sign===1).map(r=>r.length));
+            const avgNeg = avgLen(completed.filter(r=>r.sign===-1).map(r=>r.length));
+
+            const cur = runs[runs.length-1];
+            const avgCur = cur.sign === 1 ? avgPos : avgNeg;
+            const avgNxt = cur.sign === 1 ? avgNeg : avgPos;
+            const lastDate = new Date(datos[datos.length-1].fecha + 'T00:00:00');
+
+            let html = '<div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-top:0.75rem;">';
+            const estadoLabel = cur.sign===1 ? '🟢 Ciclo alto (energía)' : '🔴 Ciclo bajo (energía)';
+            html += `<div style="flex:1;min-width:140px;background:${cur.sign===1?'#E8F5E9':'#FFEBEE'};border-radius:10px;padding:0.75rem;font-size:0.8rem;">
+                <div style="font-weight:700;margin-bottom:4px;">${estadoLabel}</div>
+                <div style="color:#666;">Duración actual: ${cur.length} día(s)</div>
+                ${avgCur ? `<div style="color:#666;">Promedio histórico: ${avgCur} días</div>` : ''}
+            </div>`;
+
+            if (avgCur) {
+                const daysLeft = Math.max(0, avgCur - cur.length);
+                const nextChange = new Date(lastDate); nextChange.setDate(lastDate.getDate() + daysLeft);
+                const nextLabel = cur.sign===1 ? '🔻 Próxima baja' : '🔼 Próxima alza';
+                const nextStr = nextChange.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'});
+                html += `<div style="flex:1;min-width:140px;background:var(--lavender-light);border-radius:10px;padding:0.75rem;font-size:0.8rem;">
+                    <div style="font-weight:700;margin-bottom:4px;color:var(--purple);">${nextLabel}</div>
+                    <div style="color:#666;">${daysLeft===0?'Podría ser pronto':`En aprox. ${daysLeft} día(s)`}</div>
+                    <div style="color:var(--purple);font-weight:700;font-size:0.95rem;">~${nextStr}</div>
+                    ${avgNxt ? `<div style="color:#888;font-size:0.72rem;margin-top:3px;">Duración esperada: ${avgNxt} días</div>` : ''}
+                </div>`;
+            }
+
+            if (avgPos && avgNeg) {
+                html += `<div style="flex:1;min-width:140px;background:#F3E5F5;border-radius:10px;padding:0.75rem;font-size:0.8rem;">
+                    <div style="font-weight:700;margin-bottom:4px;color:var(--purple);">🔄 Ciclo completo</div>
+                    <div style="color:#666;">Alta energía: ~${avgPos} días</div>
+                    <div style="color:#666;">Baja energía: ~${avgNeg} días</div>
+                    <div style="color:var(--purple);font-weight:600;margin-top:3px;">Total: ~${avgPos+avgNeg} días</div>
+                </div>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function exportarDiario() {
+            const datos = (appData.diario || []).sort((a,b) => a.fecha.localeCompare(b.fecha));
+            if (datos.length === 0) { alert('No hay registros para exportar.'); return; }
+            const esc = s => `"${(s||'').replace(/"/g,'""')}"`;
+            const header = 'fecha,estado_interno,tension_corporal,bloqueos,exitos,lo_que_agradezco,nota\n';
+            const rows = datos.map(e => [
+                e.fecha,
+                e.estadoInterno !== null && e.estadoInterno !== undefined ? e.estadoInterno : '',
+                e.tensionCorporal || '',
+                esc(e.bloqueos), esc(e.exitos), esc(e.agradezco), esc(e.nota)
+            ].join(',')).join('\n');
+            const blob = new Blob(['﻿' + header + rows], {type:'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `diario-ser-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(url);
+        }
+        // ===================== FIN DIARIO =====================
 
         // SUPABASE
         const SUPABASE_URL = 'https://fvyczwosjpzlsqoliosv.supabase.co';
