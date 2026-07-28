@@ -776,6 +776,12 @@
                             <input type="date" id="filtroFechaHasta" class="search-box" onchange="aplicarFiltros()">
                         </div>
                         
+                        <div class="filter-group" style="display: flex; align-items: flex-end; gap:0.5rem;">
+                            <label style="display:flex; align-items:center; gap:5px; font-size:0.85rem; color:var(--purple); font-weight:600; cursor:pointer; white-space:nowrap;">
+                                <input type="checkbox" id="filtroSinFecha" onchange="aplicarFiltros()"> 📋 Solo por agendar (sin fecha)
+                            </label>
+                        </div>
+
                         <div class="filter-group" style="display: flex; align-items: flex-end;">
                             <button class="btn btn-secondary btn-small" onclick="limpiarFiltros()">Limpiar</button>
                         </div>
@@ -2252,6 +2258,7 @@
             document.getElementById('filtroCreencia').value = '';
             document.getElementById('filtroFechaDesde').value = '';
             document.getElementById('filtroFechaHasta').value = '';
+            document.getElementById('filtroSinFecha').checked = false;
             aplicarFiltros();
         }
 
@@ -2267,20 +2274,29 @@
             const creenciaFiltro = document.getElementById('filtroCreencia').value;
             const fechaDesdeFiltro = document.getElementById('filtroFechaDesde').value;
             const fechaHastaFiltro = document.getElementById('filtroFechaHasta').value;
+            const sinFechaFiltro = document.getElementById('filtroSinFecha').checked;
 
+            if (sinFechaFiltro) {
+                actividades = actividades.filter(a => !a.fecha && !a.completada);
+            } else {
+                if (fechaDesdeFiltro) actividades = actividades.filter(a => a.fecha >= fechaDesdeFiltro);
+                if (fechaHastaFiltro) actividades = actividades.filter(a => a.fecha <= fechaHastaFiltro + 'T23:59');
+            }
             if (textoFiltro) actividades = actividades.filter(a => a.nombre.toLowerCase().includes(textoFiltro));
             if (proyectoFiltro) actividades = actividades.filter(a => a.proyectoId === parseInt(proyectoFiltro));
             if (prioridadFiltro) actividades = actividades.filter(a => a.prioridad === prioridadFiltro);
             if (creenciaFiltro) actividades = actividades.filter(a => a.creencia === creenciaFiltro);
-            if (fechaDesdeFiltro) actividades = actividades.filter(a => a.fecha >= fechaDesdeFiltro);
-            if (fechaHastaFiltro) actividades = actividades.filter(a => a.fecha <= fechaHastaFiltro + 'T23:59');
 
             if (actividades.length === 0) {
                 lista.innerHTML = '<p style="text-align: center; color: #666; margin-top: 2rem;">Sin actividades.</p>';
                 return;
             }
 
-            actividades.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            if (sinFechaFiltro) {
+                actividades.sort((a, b) => new Date(a.creado || 0) - new Date(b.creado || 0));
+            } else {
+                actividades.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            }
 
             lista.innerHTML = actividades.map(a => {
                 const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
@@ -2890,7 +2906,7 @@
                     }).join('')}
                 </div>`;
 
-            contenedor.innerHTML = htmlPanelAtrasadas() + htmlPanelSinAgendar(fechaStr) + html;
+            contenedor.innerHTML = htmlPanelAtrasadas() + html + htmlPanelSinAgendar(fechaStr);
         }
 
         function htmlPanelAtrasadas() {
@@ -3051,7 +3067,7 @@
             startDay.setDate(primerDia.getDate() + offsetLunes);
             const hoy = new Date();
 
-            let html = htmlPanelAtrasadas() + htmlPanelSinAgendar(fechaStr) + `
+            let html = htmlPanelAtrasadas() + `
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
                     <button class="btn btn-secondary btn-small" onclick="navegarMes(-1)">‹ Anterior</button>
                     <strong style="color:var(--purple); font-size:1.05rem;">${nombresMes[mes]} ${año}</strong>
@@ -3124,6 +3140,8 @@
                     </div>`;
             }
 
+            html += htmlPanelSinAgendar(fechaStr);
+
             contenedor.innerHTML = html;
         }
 
@@ -3192,7 +3210,7 @@
             const lunes = new Date(fechaRef);
             lunes.setDate(fechaRef.getDate() + diffLunes);
 
-            let html = htmlPanelAtrasadas() + htmlPanelSinAgendar(fechaStr) + '<div class="week-view-container">';
+            let html = htmlPanelAtrasadas() + '<div class="week-view-container">';
 
             for (let i = 0; i < 7; i++) {
                 const fechaDia = new Date(lunes);
@@ -3305,6 +3323,8 @@
             }
 
             html += '</div>';
+
+            html += htmlPanelSinAgendar(fechaStr);
 
             contenedor.innerHTML = html;
         }
