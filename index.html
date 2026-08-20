@@ -226,6 +226,48 @@
             margin-top: 1rem;
         }
 
+        /* PLANIFICADOR */
+        .planif-hora-linea {
+            position: absolute;
+            left: 0; right: 0;
+            border-top: 1px solid #f0eef5;
+            height: 1px;
+        }
+        .planif-hora-linea span {
+            position: absolute;
+            left: 4px; top: -8px;
+            font-size: 0.68rem;
+            color: #aaa;
+            background: white;
+            padding: 0 4px;
+        }
+        .planif-linea-ahora {
+            position: absolute;
+            left: 55px; right: 8px;
+            height: 2px;
+            background: #e53935;
+            z-index: 5;
+        }
+        .planif-bloque {
+            position: absolute;
+            left: 58px; right: 8px;
+            background: var(--lavender-light);
+            border-left: 4px solid var(--purple);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 0.75rem;
+            overflow: hidden;
+            cursor: grab;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            user-select: none;
+            touch-action: none;
+            z-index: 2;
+        }
+        .planif-bloque:active { cursor: grabbing; z-index: 10; box-shadow: 0 3px 8px rgba(0,0,0,0.18); }
+        .planif-bloque-nombre { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .planif-bloque-hora { color: #777; font-size: 0.68rem; }
+        .planif-completado { opacity: 0.55; }
+
         .week-day-column {
             background: var(--lavender-light);
             padding: 1rem 0.5rem;
@@ -676,8 +718,10 @@
         <button class="nav-tab" onclick="mostrarVista('proyectos')">🎯 Proyectos</button>
         <button class="nav-tab" onclick="mostrarVista('todasActividades')">📋 Actividades</button>
         <button class="nav-tab" onclick="mostrarVista('agenda')">📅 Agenda</button>
+        <button class="nav-tab" onclick="mostrarVista('planificador')">🗓️ Planificador</button>
         <button class="nav-tab" onclick="mostrarVista('habitos')">⚡ Hábitos</button>
         <button class="nav-tab" onclick="mostrarVista('rituales')">🌟 Rituales</button>
+        <button class="nav-tab" onclick="mostrarVista('rutinaPoder')">🌅 Rutina de Poder</button>
         <button class="nav-tab" onclick="mostrarVista('diario')">📓 Diario</button>
         <button class="nav-tab" onclick="mostrarVista('parametros')">⚙️ Parámetros</button>
     </div>
@@ -800,9 +844,57 @@
                     <button class="toggle-btn active" onclick="cambiarVistaAgenda('dia')">Vista Diaria</button>
                     <button class="toggle-btn" onclick="cambiarVistaAgenda('semana')">Vista Semanal</button>
                     <button class="toggle-btn" onclick="cambiarVistaAgenda('mes')">Vista Mensual</button>
+                    <button class="toggle-btn" onclick="cambiarVistaAgenda('sinagendar')">📋 Sin Agendar</button>
                     <input type="date" id="fechaAgenda" class="date-selector" onchange="renderizarAgenda()">
                 </div>
                 <div id="agendaContenido"></div>
+            </div>
+        </div>
+
+        <!-- PLANIFICADOR -->
+        <div id="planificador" class="view">
+            <div class="card">
+                <h2 class="card-title">🗓️ Planificador de Jornada</h2>
+                <p style="font-size:0.85rem; color:#666; margin-bottom:1rem;">
+                    Arma tu jornada arrastrando los bloques con el mouse. Ya aparecen tus hábitos y actividades agendadas para el día. Si sueltas un bloque sobre otro, los bloques siguientes se corren en cadena para no cruzarse.<br>
+                    <span style="color:#E65100;">⚠️ Si mueves un hábito aquí, se actualiza su horario habitual (aplica a todos los días en que se repite).</span>
+                </p>
+
+                <div style="display:flex; align-items:center; justify-content:center; gap:0.75rem; margin-bottom:0.5rem; flex-wrap:wrap;">
+                    <button class="btn btn-secondary btn-small" onclick="cambiarDiaPlanificador(-1)">‹ Anterior</button>
+                    <button class="btn btn-secondary btn-small" onclick="irHoyPlanificador()">Hoy</button>
+                    <input type="date" id="fechaPlanificador" class="date-selector" onchange="resetScrollPlanificador(); renderizarPlanificador()">
+                    <button class="btn btn-secondary btn-small" onclick="cambiarDiaPlanificador(1)">Siguiente ›</button>
+                </div>
+                <div style="text-align:center; font-weight:700; color:var(--purple); text-transform:capitalize; margin-bottom:0.75rem;" id="planificadorFechaLabel"></div>
+
+                <div id="planificadorScroll" style="position:relative; height:65vh; overflow-y:auto; border:1px solid var(--lavender); border-radius:10px; background:white;">
+                    <div id="planificadorTrack" style="position:relative;"></div>
+                </div>
+
+                <h3 style="color:var(--purple); margin:1.5rem 0 0.75rem;">+ Agregar bloque rápido</h3>
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:flex-end;">
+                    <div class="filter-group" style="flex:2; min-width:140px;">
+                        <label class="filter-label">Nombre</label>
+                        <input type="text" class="search-box" id="planifNuevoNombre" placeholder="Ej: Reunión equipo">
+                    </div>
+                    <div class="filter-group" style="min-width:100px;">
+                        <label class="filter-label">Hora</label>
+                        <input type="time" class="search-box" id="planifNuevaHora">
+                    </div>
+                    <div class="filter-group" style="min-width:110px;">
+                        <label class="filter-label">Duración (min)</label>
+                        <input type="number" class="search-box" id="planifNuevaDuracion" min="5" step="5" value="30">
+                    </div>
+                    <div class="filter-group" style="min-width:120px;">
+                        <label class="filter-label">Tipo</label>
+                        <select class="filter-select" id="planifNuevoTipo">
+                            <option value="laboral">💼 Laboral</option>
+                            <option value="recreativa">🎨 Recreativa</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-small" onclick="agregarBloquePlanificador()">+ Agregar</button>
+                </div>
             </div>
         </div>
 
@@ -836,6 +928,16 @@
                 <h2 class="card-title">Mis Rituales SER</h2>
                 <button class="btn btn-primary" onclick="abrirModalRitual()">+ Nuevo Ritual</button>
                 <div id="listaRituales"></div>
+            </div>
+        </div>
+
+        <!-- RUTINA DE PODER -->
+        <div id="rutinaPoder" class="view">
+            <div class="card">
+                <h2 class="card-title">🌅 Rutina de Poder</h2>
+                <p style="font-size:0.85rem; color:#666; margin-bottom:1rem;">Tu ritual personal para volver a ti. Cada persona puede crear su propia rutina, con sus pasos y su horario.</p>
+                <button class="btn btn-primary" onclick="abrirModalRutinaPoder()">+ Nueva Rutina de Poder</button>
+                <div id="listaRutinasPoder"></div>
             </div>
         </div>
 
@@ -1378,7 +1480,43 @@
         </div>
     </div>
 
-    <!-- Modal Creencia -->
+    <!-- Modal Rutina de Poder -->
+    <div id="modalRutinaPoder" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="tituloModalRutinaPoder">Nueva Rutina de Poder</h2>
+                <button class="close-btn" onclick="cerrarModalRutinaPoder()">&times;</button>
+            </div>
+            <form id="formRutinaPoder" onsubmit="guardarRutinaPoder(event)">
+                <input type="hidden" id="rutinaPoderId">
+                <div class="form-group">
+                    <label class="form-label">Nombre de la rutina *</label>
+                    <input type="text" class="form-input" id="rutinaPoderNombre" required placeholder="Ej: Ritual de Poder: Volver a Mí">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hora sugerida <span style="font-weight:400; color:#888; font-size:0.85rem;">(opcional)</span></label>
+                    <input type="time" class="form-input" id="rutinaPoderHora">
+                </div>
+
+                <h3 style="color: var(--purple); margin: 1.5rem 0 0.75rem;">Pasos de tu rutina</h3>
+                <div id="listaPasosTemp"></div>
+
+                <div class="smart-section" style="margin-top:0.5rem;">
+                    <div class="ritual-field">
+                        <label>Título del paso</label>
+                        <input type="text" class="form-input" id="pasoTempTitulo" placeholder="Ej: Vuelvo a mí">
+                    </div>
+                    <div class="ritual-field">
+                        <label>Contenido</label>
+                        <textarea class="form-textarea" id="pasoTempContenido" placeholder="Escribe aquí las frases o instrucciones de este paso..."></textarea>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="agregarPasoTemp()">+ Agregar paso</button>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top:1.5rem;">Guardar Rutina</button>
+            </form>
+        </div>
+    </div>
     <div id="modalCreencia" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1466,6 +1604,18 @@
             '#6a1b9a','#283593','#1a237e','#004d40','#1b5e20',
             '#827717'
         ];
+
+        // RUTINA DE PODER (rutina personal, cada usuario puede crear la suya)
+        const RUTINA_PODER_DEFAULT = [
+            { id: 1, nombre: 'Ritual de Poder: Volver a Mí', hora: '07:00', pasos: [
+                { id: 1, titulo: 'Vuelvo a mí', contenido: 'Realiza la respiración 4-7-8 tres veces.\nInhalo presencia.\nReconozco quién soy.\nSuelto todo lo que no soy.' },
+                { id: 2, titulo: 'Recuerdo quién soy', contenido: 'Yo soy Constanza y recuerdo que soy…\n\n• Soy una creadora consciente de mi realidad.\n• Soy suficiente exactamente como soy.\n• Soy amor.\n• Soy abundancia.\n• Soy prosperidad.\n• Soy una mujer valiosa.\n• Soy creativa y siempre encuentro soluciones.\n• Soy inteligente.\n• Soy capaz.\n• Soy alegre.\n• Soy feliz.\n• Soy apasionada por la vida, por mi propósito y por Fernando.\n• Soy una mujer increíble.\n• Soy una mujer que inspira a otras mujeres.\n• Soy una mujer que reconoce su valor.\n• Soy una mujer que siempre logra lo que se propone.\n• Soy una mujer que avanza cada día hacia sus metas.\n• Soy una mujer que confía profundamente en sí misma.\n• Soy una mujer que honra y cuida su cuerpo con amor.\n• Soy una mujer que administra su dinero con sabiduría.\n• Soy una mujer que genera abundancia para ella y para quienes la rodean.\n• Soy una mujer que comparte cada día su sabiduría con el mundo.\n• Soy una mujer que recibe con facilidad todo lo bueno que Dios tiene preparado para ella.\n• Soy una mujer rodeada de amor, que fortalece cada día los lazos con las personas que ama.\n• Soy una mujer que vive con paz, gratitud y propósito.\n\nHoy me comprometo a elegir los pensamientos, las emociones y las acciones que expresen, cada vez con mayor libertad, quién realmente soy.' },
+                { id: 3, titulo: 'Elijo las verdades desde las que viviré hoy', contenido: 'Hoy recuerdo que:\n\n• Compartir mi sabiduría transforma vidas.\n• Mi propósito crea prosperidad para mí y para quienes me rodean.\n• Es seguro para mí recibir abundancia.\n• Mientras más crezco, más inspiro y más personas se benefician.\n• El dinero amplifica el amor, la generosidad y el impacto que ya existen en mí.\n• Es seguro para mí tener éxito, el éxito también me permite fortalecer los lazos con las personas que amo.\n• Mis ingresos crecen como consecuencia del valor que comparto con el mundo.\n• Dios abre para mí las puertas, las personas y las oportunidades perfectas.\n• Hoy recibiré más de lo que imaginé.' },
+                { id: 4, titulo: 'Confío y recibo', contenido: 'Respira profundamente. Luego di:\n\nGracias Dios.\nGracias porque ya estás obrando incluso antes de que pueda verlo.\nGracias porque provees todo lo que necesito en el momento perfecto.\nHoy abro mi mente, mi corazón y mi vida para recibir tu abundancia.\nMuéstrame una señal clara de que me estás guiando.\nEstoy presente.\nEstoy abierta.\nEstoy lista.\nConfío plenamente en Ti.\n\nGracias, gracias, gracias.' }
+            ], creado: '2025-01-01T00:00:00.000Z' }
+        ];
+
+        const RUTINA_COLORES = ['#F9A825', '#4B168E', '#43A047', '#1E88E5', '#D81B60', '#00897B', '#EF6C00', '#6A1B9A'];
 
         let periodosDash = 14;
         let vistaHabitosActual = 'lista';
@@ -1592,6 +1742,7 @@
             habitos: [],
             diario: [],
             rituales: RITUALES_DEFAULT,
+            rutinasPoder: RUTINA_PODER_DEFAULT,
             config: { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 }, jornadaRecreativa: { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 } },
             creencias: [
                 'Miedo al éxito',
@@ -1658,8 +1809,10 @@
             if (vista === 'proyectos') renderizarProyectos();
             if (vista === 'todasActividades') renderizarTodasActividades();
             if (vista === 'agenda') renderizarAgenda();
+            if (vista === 'planificador') renderizarPlanificador();
             if (vista === 'habitos') { renderizarHabitos(); if (vistaHabitosActual === 'dashboard') renderizarDashboardHabitos(); }
             if (vista === 'rituales') renderizarRituales();
+            if (vista === 'rutinaPoder') renderizarRutinasPoder();
             if (vista === 'parametros') {
                 renderizarCreencias();
                 poblarJornada();
@@ -2540,11 +2693,394 @@
             }).join('');
         }
 
+        // RUTINA DE PODER
+        let pasosTemp = [];
+
+        function agregarPasoTemp() {
+            const titulo = document.getElementById('pasoTempTitulo').value.trim();
+            const contenido = document.getElementById('pasoTempContenido').value.trim();
+            if (!titulo && !contenido) return;
+            pasosTemp.push({ id: Date.now(), titulo: titulo || `Paso ${pasosTemp.length + 1}`, contenido });
+            document.getElementById('pasoTempTitulo').value = '';
+            document.getElementById('pasoTempContenido').value = '';
+            renderizarPasosTemp();
+        }
+
+        function eliminarPasoTemp(idx) {
+            pasosTemp.splice(idx, 1);
+            renderizarPasosTemp();
+        }
+
+        function moverPasoTemp(idx, delta) {
+            const nuevoIdx = idx + delta;
+            if (nuevoIdx < 0 || nuevoIdx >= pasosTemp.length) return;
+            [pasosTemp[idx], pasosTemp[nuevoIdx]] = [pasosTemp[nuevoIdx], pasosTemp[idx]];
+            renderizarPasosTemp();
+        }
+
+        function renderizarPasosTemp() {
+            const c = document.getElementById('listaPasosTemp');
+            if (!c) return;
+            if (pasosTemp.length === 0) {
+                c.innerHTML = '<p style="color:#aaa; font-size:0.85rem; margin-bottom:0.5rem;">Aún no agregas pasos a esta rutina.</p>';
+                return;
+            }
+            c.innerHTML = pasosTemp.map((p, i) => `
+                <div style="background:var(--lavender-light); border-radius:8px; padding:0.6rem 0.75rem; margin-bottom:0.5rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:start; gap:6px;">
+                        <div style="flex:1; min-width:0;">
+                            <strong style="color:var(--purple); font-size:0.85rem;">${i + 1}. ${p.titulo}</strong>
+                            <div style="font-size:0.8rem; color:#555; white-space:pre-wrap; margin-top:2px;">${p.contenido}</div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:2px; flex-shrink:0;">
+                            <button type="button" onclick="moverPasoTemp(${i},-1)" ${i === 0 ? 'disabled' : ''} style="border:none; background:${i === 0 ? '#eee' : 'var(--lavender)'}; border-radius:3px; padding:0 4px; font-size:0.65rem; cursor:${i === 0 ? 'default' : 'pointer'}; line-height:1.4;">▲</button>
+                            <button type="button" onclick="moverPasoTemp(${i},1)" ${i === pasosTemp.length - 1 ? 'disabled' : ''} style="border:none; background:${i === pasosTemp.length - 1 ? '#eee' : 'var(--lavender)'}; border-radius:3px; padding:0 4px; font-size:0.65rem; cursor:${i === pasosTemp.length - 1 ? 'default' : 'pointer'}; line-height:1.4;">▼</button>
+                            <button type="button" class="btn btn-delete btn-small" onclick="eliminarPasoTemp(${i})" style="padding:0.2rem 0.5rem;">×</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function abrirModalRutinaPoder(id = null) {
+            pasosTemp = [];
+            if (id) {
+                const r = appData.rutinasPoder.find(r => r.id === id);
+                document.getElementById('rutinaPoderId').value = r.id;
+                document.getElementById('rutinaPoderNombre').value = r.nombre;
+                document.getElementById('rutinaPoderHora').value = r.hora || '';
+                pasosTemp = r.pasos ? r.pasos.map(p => ({ ...p })) : [];
+                document.getElementById('tituloModalRutinaPoder').textContent = 'Editar Rutina de Poder';
+            } else {
+                document.getElementById('tituloModalRutinaPoder').textContent = 'Nueva Rutina de Poder';
+            }
+            renderizarPasosTemp();
+            abrirModal('modalRutinaPoder');
+        }
+
+        function cerrarModalRutinaPoder() {
+            cerrarModal('modalRutinaPoder');
+            pasosTemp = [];
+        }
+
+        function guardarRutinaPoder(e) {
+            e.preventDefault();
+            if (pasosTemp.length === 0) {
+                alert('Agrega al menos un paso a tu rutina antes de guardar.');
+                return;
+            }
+            const idExistente = document.getElementById('rutinaPoderId').value;
+            const rutina = {
+                id: idExistente ? parseInt(idExistente) : Date.now(),
+                nombre: document.getElementById('rutinaPoderNombre').value,
+                hora: document.getElementById('rutinaPoderHora').value,
+                pasos: [...pasosTemp],
+                creado: idExistente ? (appData.rutinasPoder.find(r => r.id === parseInt(idExistente))?.creado || new Date().toISOString()) : new Date().toISOString()
+            };
+            if (idExistente) {
+                const index = appData.rutinasPoder.findIndex(r => r.id === parseInt(idExistente));
+                if (index >= 0) appData.rutinasPoder[index] = rutina;
+            } else {
+                appData.rutinasPoder.push(rutina);
+            }
+            guardarDatos();
+            cerrarModalRutinaPoder();
+            renderizarRutinasPoder();
+        }
+
+        function eliminarRutinaPoder(id) {
+            const r = appData.rutinasPoder.find(r => r.id === id);
+            if (!r) return;
+            if (!confirm(`¿Eliminar la rutina "${r.nombre}"? Esta acción no se puede deshacer.`)) return;
+            appData.rutinasPoder = appData.rutinasPoder.filter(r => r.id !== id);
+            guardarDatos();
+            renderizarRutinasPoder();
+        }
+
+        function toggleRutinaPoder(id) {
+            const detalle = document.getElementById(`rutina-detalle-${id}`);
+            const chevron = document.getElementById(`rutina-chevron-${id}`);
+            if (!detalle) return;
+            const abierto = detalle.style.display !== 'none';
+            detalle.style.display = abierto ? 'none' : 'block';
+            chevron.textContent = abierto ? '▼' : '▲';
+        }
+
+        function renderizarRutinasPoder() {
+            const lista = document.getElementById('listaRutinasPoder');
+            if (!lista) return;
+            if (!appData.rutinasPoder || appData.rutinasPoder.length === 0) {
+                lista.innerHTML = '<p style="text-align: center; color: #666; margin-top: 2rem;">Aún no tienes una Rutina de Poder. ¡Crea la tuya!</p>';
+                return;
+            }
+            lista.innerHTML = appData.rutinasPoder.map((r, idx) => {
+                const color = RUTINA_COLORES[idx % RUTINA_COLORES.length];
+                return `
+                <div class="ritual-item" style="border-left-color: ${color};">
+                    <div class="ritual-header" onclick="toggleRutinaPoder(${r.id})">
+                        <div class="ritual-header-left">
+                            <span class="ritual-badge" style="background:${color};">🌅</span>
+                            <strong>${r.nombre}</strong>
+                            ${r.hora ? `<small style="color:#666; font-size:0.8rem;">⏰ ${r.hora}</small>` : ''}
+                        </div>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <button class="btn btn-edit btn-small" onclick="event.stopPropagation(); abrirModalRutinaPoder(${r.id})">Editar</button>
+                            <button class="btn btn-delete btn-small" onclick="event.stopPropagation(); eliminarRutinaPoder(${r.id})">Eliminar</button>
+                            <span class="ritual-chevron" id="rutina-chevron-${r.id}">▼</span>
+                        </div>
+                    </div>
+                    <div class="ritual-detalle" id="rutina-detalle-${r.id}" style="display:none;">
+                        ${(r.pasos || []).map((p, i) => `
+                            <div style="background: var(--lavender-light); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; border-left: 3px solid ${color};">
+                                <strong style="color: var(--purple); font-size:0.85rem;">${i + 1}. ${p.titulo}</strong>
+                                <div style="font-size:0.88rem; white-space:pre-wrap; margin-top:4px;">${p.contenido}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // PLANIFICADOR DE JORNADA
+        const PLANIF_PXMIN = 1; // 1px por minuto = 60px por hora
+
+        function minutosAHHMM(min) {
+            min = Math.max(0, Math.min(1439, Math.round(min)));
+            const h = Math.floor(min / 60).toString().padStart(2, '0');
+            const m = (min % 60).toString().padStart(2, '0');
+            return `${h}:${m}`;
+        }
+
+        function resetScrollPlanificador() {
+            const c = document.getElementById('planificadorScroll');
+            if (c) delete c.dataset.scrolled;
+        }
+
+        function cambiarDiaPlanificador(delta) {
+            const input = document.getElementById('fechaPlanificador');
+            const f = new Date((input.value || new Date().toISOString().split('T')[0]) + 'T00:00:00');
+            f.setDate(f.getDate() + delta);
+            input.value = f.toISOString().split('T')[0];
+            resetScrollPlanificador();
+            renderizarPlanificador();
+        }
+
+        function irHoyPlanificador() {
+            document.getElementById('fechaPlanificador').value = new Date().toISOString().split('T')[0];
+            resetScrollPlanificador();
+            renderizarPlanificador();
+        }
+
+        function obtenerBloquesPlanificador(fechaStr) {
+            const fechaDia = new Date(fechaStr + 'T00:00:00');
+            const diaValor = fechaDia.getDay();
+
+            const habitosDia = appData.habitos.filter(h => {
+                if (h.modo === 'innegociable') return false;
+                const inicio = new Date(h.fechaInicio + 'T00:00:00');
+                if (fechaDia < inicio) return false;
+                if (h.fechaFin && new Date(h.fechaFin + 'T23:59:59') < fechaDia) return false;
+                if (h.frecuencia === 'diaria') return true;
+                if (h.frecuencia === 'semanal') return h.diasSemana.includes(diaValor);
+                if (h.frecuencia === 'mensual') return fechaDia.getDate() === inicio.getDate();
+                return false;
+            });
+
+            const actividadesDia = appData.actividades.filter(a => {
+                if (!a.fecha) return false;
+                return new Date(a.fecha).toDateString() === fechaDia.toDateString();
+            });
+
+            return [
+                ...habitosDia.map(h => ({
+                    tipo: 'habito', id: h.id, nombre: h.nombre,
+                    inicio: getMinutosDelDia(h.hora),
+                    duracion: Math.max(5, Math.round(duracionAHoras(h.duracion, h.unidad || 'min') * 60)),
+                    completado: !!(h.completados && h.completados[fechaStr])
+                })),
+                ...actividadesDia.map(a => ({
+                    tipo: 'actividad', id: a.id, nombre: a.nombre,
+                    inicio: getMinutosDelDia(new Date(a.fecha).toTimeString().substring(0, 5)),
+                    duracion: Math.max(5, Math.round(duracionAHoras(a.duracion, a.unidad || 'h') * 60)),
+                    tipoActividad: a.tipo, completado: !!a.completada
+                }))
+            ].sort((a, b) => a.inicio - b.inicio);
+        }
+
+        function renderizarPlanificador() {
+            const input = document.getElementById('fechaPlanificador');
+            if (!input) return;
+            if (!input.value) input.value = new Date().toISOString().split('T')[0];
+            const fechaStr = input.value;
+            const fechaDia = new Date(fechaStr + 'T00:00:00');
+            const label = document.getElementById('planificadorFechaLabel');
+            if (label) label.textContent = fechaDia.toLocaleDateString('es-CL', { weekday: 'long', day: '2-digit', month: 'long' });
+
+            const bloques = obtenerBloquesPlanificador(fechaStr);
+            const track = document.getElementById('planificadorTrack');
+            if (!track) return;
+
+            let horasHTML = '';
+            for (let h = 0; h < 24; h++) {
+                horasHTML += `<div class="planif-hora-linea" style="top:${h * 60 * PLANIF_PXMIN}px;"><span>${h.toString().padStart(2, '0')}:00</span></div>`;
+            }
+
+            const ahora = new Date();
+            let lineaAhoraHTML = '';
+            if (fechaDia.toDateString() === ahora.toDateString()) {
+                const minAhora = ahora.getHours() * 60 + ahora.getMinutes();
+                lineaAhoraHTML = `<div class="planif-linea-ahora" style="top:${minAhora * PLANIF_PXMIN}px;"></div>`;
+            }
+
+            const bloquesHTML = bloques.map(b => {
+                const top = b.inicio * PLANIF_PXMIN;
+                const alto = Math.max(b.duracion * PLANIF_PXMIN, 20);
+                const horaIni = minutosAHHMM(b.inicio);
+                const horaFin = minutosAHHMM(b.inicio + b.duracion);
+                const esHabito = b.tipo === 'habito';
+                const color = esHabito ? 'var(--gold)' : 'var(--purple)';
+                const icono = esHabito ? '⚡' : (b.tipoActividad === 'recreativa' ? '🎨' : '📌');
+                return `<div class="planif-bloque ${b.completado ? 'planif-completado' : ''}"
+                            style="top:${top}px; height:${alto}px; border-left-color:${color};"
+                            onmousedown="iniciarDragBloque(event,'${b.tipo}',${b.id},${b.inicio},${b.duracion})">
+                        <div class="planif-bloque-nombre">${icono} ${b.nombre}</div>
+                        <div class="planif-bloque-hora">${horaIni} - ${horaFin}</div>
+                    </div>`;
+            }).join('');
+
+            track.innerHTML = horasHTML + lineaAhoraHTML + bloquesHTML;
+            track.style.height = (1440 * PLANIF_PXMIN) + 'px';
+
+            const contenedorScroll = document.getElementById('planificadorScroll');
+            if (contenedorScroll && !contenedorScroll.dataset.scrolled) {
+                const primerBloque = bloques[0];
+                const scrollMin = primerBloque ? Math.max(0, primerBloque.inicio - 60) : 360;
+                contenedorScroll.scrollTop = scrollMin * PLANIF_PXMIN;
+                contenedorScroll.dataset.scrolled = '1';
+            }
+        }
+
+        let planifDragState = null;
+
+        function iniciarDragBloque(e, tipo, id, inicioMin, duracionMin) {
+            e.preventDefault();
+            planifDragState = {
+                tipo, id,
+                elem: e.currentTarget,
+                startClientY: e.clientY,
+                startTopMin: inicioMin,
+                duracionMin,
+                nuevoInicio: inicioMin,
+                moved: false
+            };
+            document.addEventListener('mousemove', arrastrarBloquePlanif);
+            document.addEventListener('mouseup', soltarBloquePlanif);
+        }
+
+        function arrastrarBloquePlanif(e) {
+            if (!planifDragState) return;
+            const deltaY = e.clientY - planifDragState.startClientY;
+            if (Math.abs(deltaY) > 4) planifDragState.moved = true;
+            const deltaMin = Math.round((deltaY / PLANIF_PXMIN) / 5) * 5;
+            let nuevoInicio = planifDragState.startTopMin + deltaMin;
+            nuevoInicio = Math.max(0, Math.min(nuevoInicio, 1440 - planifDragState.duracionMin));
+            planifDragState.nuevoInicio = nuevoInicio;
+            planifDragState.elem.style.top = (nuevoInicio * PLANIF_PXMIN) + 'px';
+        }
+
+        function soltarBloquePlanif() {
+            document.removeEventListener('mousemove', arrastrarBloquePlanif);
+            document.removeEventListener('mouseup', soltarBloquePlanif);
+            if (!planifDragState) return;
+            const { tipo, id, moved, nuevoInicio } = planifDragState;
+            planifDragState = null;
+            if (!moved) {
+                if (tipo === 'actividad') abrirModalActividad(id);
+                else abrirModalHabito(id);
+                return;
+            }
+            moverBloquePlanificador(tipo, id, nuevoInicio);
+        }
+
+        function moverBloquePlanificador(tipoMovido, idMovido, nuevoInicio) {
+            const fechaStr = document.getElementById('fechaPlanificador').value;
+            const bloques = obtenerBloquesPlanificador(fechaStr);
+            const movido = bloques.find(b => b.tipo === tipoMovido && b.id === idMovido);
+            if (!movido) return;
+            movido.inicio = nuevoInicio;
+            bloques.sort((a, b) => a.inicio - b.inicio);
+
+            // Efecto dominó: empuja hacia adelante los bloques que quedan solapados
+            for (let i = 1; i < bloques.length; i++) {
+                const finAnterior = bloques[i - 1].inicio + bloques[i - 1].duracion;
+                if (bloques[i].inicio < finAnterior) {
+                    bloques[i].inicio = Math.min(finAnterior, 1440 - bloques[i].duracion);
+                }
+            }
+
+            let huboHabito = false;
+            bloques.forEach(b => {
+                const horaStr = minutosAHHMM(b.inicio);
+                if (b.tipo === 'habito') {
+                    const h = appData.habitos.find(x => x.id === b.id);
+                    if (h && h.hora !== horaStr) { h.hora = horaStr; huboHabito = true; }
+                } else {
+                    const a = appData.actividades.find(x => x.id === b.id);
+                    if (a) {
+                        const nuevaFecha = fechaStr + 'T' + horaStr;
+                        if (a.fecha !== nuevaFecha) a.fecha = nuevaFecha;
+                    }
+                }
+            });
+
+            guardarDatos();
+            renderizarPlanificador();
+            renderizarAgenda();
+            renderizarDashboard();
+            if (huboHabito) renderizarHabitos();
+        }
+
+        function agregarBloquePlanificador() {
+            const fechaStr = document.getElementById('fechaPlanificador').value;
+            const nombre = document.getElementById('planifNuevoNombre').value.trim();
+            const hora = document.getElementById('planifNuevaHora').value;
+            const duracion = parseFloat(document.getElementById('planifNuevaDuracion').value);
+            const tipo = document.getElementById('planifNuevoTipo').value;
+            if (!nombre || !hora || !duracion || duracion <= 0) {
+                alert('Completa nombre, hora y duración para agregar el bloque.');
+                return;
+            }
+            const nueva = {
+                id: Date.now(),
+                proyectoId: null,
+                nombre,
+                fecha: fechaStr + 'T' + hora,
+                duracion,
+                unidad: 'min',
+                tipo,
+                prioridad: 'media',
+                completada: false,
+                subtareas: [],
+                creado: new Date().toISOString()
+            };
+            appData.actividades.push(nueva);
+            guardarDatos();
+            document.getElementById('planifNuevoNombre').value = '';
+            document.getElementById('planifNuevaHora').value = '';
+            document.getElementById('planifNuevaDuracion').value = '30';
+            renderizarPlanificador();
+            renderizarAgenda();
+            renderizarTodasActividades();
+            renderizarDashboard();
+        }
+
         // AGENDA
         function cambiarVistaAgenda(vista) {
             vistaAgendaActual = vista;
-            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.agenda-controls .toggle-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
+            const selectorFecha = document.getElementById('fechaAgenda');
+            if (selectorFecha) selectorFecha.style.display = vista === 'sinagendar' ? 'none' : '';
             renderizarAgenda();
         }
 
@@ -2556,9 +3092,50 @@
                 renderizarAgendaDia(contenedor);
             } else if (vistaAgendaActual === 'semana') {
                 renderizarAgendaSemana(contenedor);
+            } else if (vistaAgendaActual === 'sinagendar') {
+                renderizarAgendaSinAgendar(contenedor);
             } else {
                 renderizarAgendaMes(contenedor);
             }
+        }
+
+        function renderizarAgendaSinAgendar(contenedor) {
+            const items = appData.actividades.filter(a => !a.fecha && !a.completada)
+                .sort((a, b) => new Date(a.creado || 0) - new Date(b.creado || 0));
+
+            if (items.length === 0) {
+                contenedor.innerHTML = '<div style="text-align:center; color:#888; padding:2rem;">🎉 No tienes actividades por agendar.</div>';
+                return;
+            }
+
+            contenedor.innerHTML = `
+                <div style="margin-bottom:0.75rem; font-weight:700; color:#E65100;">📋 Actividades por agendar (${items.length})</div>
+                ${items.map(a => {
+                    const proyecto = appData.proyectos.find(p => p.id === a.proyectoId);
+                    const dias = diasSinAgendar(a);
+                    const col = colorSinAgendar(dias);
+                    return `<div class="task-item" style="border-left:4px solid ${col.border}; background:${col.bg};">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.25rem;">
+                                    <span class="badge badge-purple">${proyecto?.nombre || 'Sin proyecto'}</span>
+                                    ${a.prioridad === 'alta' ? '<span class="badge badge-red">Alta</span>' : ''}
+                                    <span style="font-size:0.78rem; color:${col.texto}; font-weight:600;">${col.label}</span>
+                                </div>
+                                <h3 style="margin-top: 0.25rem;">${a.nombre}</h3>
+                                <p style="font-size: 0.9rem; color: #666; margin-top: 0.5rem;">
+                                    ${a.tipo === 'recreativa' ? '🎨' : '💼'} ${duracionTexto(a.duracion, a.unidad || 'h')}
+                                    ${a.creencia ? `<br>🧠 ${a.creencia}` : ''}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-edit btn-small" onclick="abrirModalActividad(${a.id})">Editar / Agendar</button>
+                            <button class="btn btn-small btn-primary" onclick="toggleCompletada(${a.id})">Completar</button>
+                            <button class="btn btn-delete btn-small" onclick="eliminarActividad(${a.id})">Eliminar</button>
+                        </div>
+                    </div>`;
+                }).join('')}`;
         }
 
         function getMinutosDelDia(timeStr) {
@@ -3789,6 +4366,7 @@
                     datosParseados.config.jornadaRecreativa = { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 };
                 }
                 if (!datosParseados.diario) datosParseados.diario = [];
+                if (!datosParseados.rutinasPoder) datosParseados.rutinasPoder = RUTINA_PODER_DEFAULT;
                 Object.assign(appData, datosParseados);
             }
         }
@@ -3882,9 +4460,11 @@
             renderizarProyectos();
             renderizarTodasActividades();
             renderizarAgenda();
+            renderizarPlanificador();
             renderizarHabitos();
             if (vistaHabitosActual === 'dashboard') renderizarDashboardHabitos();
             renderizarRituales();
+            renderizarRutinasPoder();
             renderizarCreencias();
             poblarJornada();
         }
@@ -4482,6 +5062,7 @@
                 if (tsRemoto > tsLocal) {
                     // Nube es más nueva: usar datos remotos
                     if (!remoto.rituales || remoto.rituales.length === 0) remoto.rituales = RITUALES_DEFAULT;
+                    if (!remoto.rutinasPoder) remoto.rutinasPoder = RUTINA_PODER_DEFAULT;
                     if (!remoto.config) remoto.config = { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 }, jornadaRecreativa: { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 } };
                     if (!remoto.config.jornadaRecreativa) remoto.config.jornadaRecreativa = { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 };
                     Object.assign(appData, remoto);
