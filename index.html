@@ -235,37 +235,37 @@
         }
         .planif-hora-linea span {
             position: absolute;
-            left: 4px; top: -8px;
-            font-size: 0.68rem;
+            left: 2px; top: -7px;
+            font-size: 0.62rem;
             color: #aaa;
             background: white;
-            padding: 0 4px;
+            padding: 0 3px;
         }
         .planif-linea-ahora {
             position: absolute;
-            left: 55px; right: 8px;
+            left: 44px; right: 4px;
             height: 2px;
             background: #e53935;
-            z-index: 5;
+            z-index: 6;
         }
         .planif-bloque {
             position: absolute;
-            left: 58px; right: 8px;
             background: var(--lavender-light);
             border-left: 4px solid var(--purple);
             border-radius: 6px;
-            padding: 3px 8px;
-            font-size: 0.75rem;
+            padding: 2px 6px;
+            font-size: 0.68rem;
             overflow: hidden;
             cursor: grab;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             user-select: none;
             touch-action: none;
             z-index: 2;
+            box-sizing: border-box;
         }
-        .planif-bloque:active { cursor: grabbing; z-index: 10; box-shadow: 0 3px 8px rgba(0,0,0,0.18); }
-        .planif-bloque-nombre { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .planif-bloque-hora { color: #777; font-size: 0.68rem; }
+        .planif-bloque:active { cursor: grabbing; z-index: 10; box-shadow: 0 3px 10px rgba(0,0,0,0.22); }
+        .planif-bloque-nombre { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height:1.25; }
+        .planif-bloque-hora { color: #777; font-size: 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .planif-completado { opacity: 0.55; }
 
         .week-day-column {
@@ -821,8 +821,8 @@
                         </div>
                         
                         <div class="filter-group" style="display: flex; align-items: flex-end; gap:0.5rem;">
-                            <label style="display:flex; align-items:center; gap:5px; font-size:0.85rem; color:var(--purple); font-weight:600; cursor:pointer; white-space:nowrap;">
-                                <input type="checkbox" id="filtroSinFecha" onchange="aplicarFiltros()"> 📋 Solo por agendar (sin fecha)
+                            <label style="display:flex; align-items:center; gap:5px; font-size:0.85rem; color:var(--purple); font-weight:600; cursor:pointer;">
+                                <input type="checkbox" id="filtroSinFecha" onchange="aplicarFiltros()" style="width:18px; height:18px; flex-shrink:0;"> 📋 Solo por agendar (sin fecha)
                             </label>
                         </div>
 
@@ -853,47 +853,56 @@
 
         <!-- PLANIFICADOR -->
         <div id="planificador" class="view">
-            <div class="card">
-                <h2 class="card-title">🗓️ Planificador de Jornada</h2>
-                <p style="font-size:0.85rem; color:#666; margin-bottom:1rem;">
-                    Arma tu jornada arrastrando los bloques con el mouse. Ya aparecen tus hábitos y actividades agendadas para el día. Si sueltas un bloque sobre otro, los bloques siguientes se corren en cadena para no cruzarse.<br>
-                    <span style="color:#E65100;">⚠️ Si mueves un hábito aquí, se actualiza su horario habitual (aplica a todos los días en que se repite).</span>
-                </p>
-
-                <div style="display:flex; align-items:center; justify-content:center; gap:0.75rem; margin-bottom:0.5rem; flex-wrap:wrap;">
-                    <button class="btn btn-secondary btn-small" onclick="cambiarDiaPlanificador(-1)">‹ Anterior</button>
-                    <button class="btn btn-secondary btn-small" onclick="irHoyPlanificador()">Hoy</button>
-                    <input type="date" id="fechaPlanificador" class="date-selector" onchange="resetScrollPlanificador(); renderizarPlanificador()">
-                    <button class="btn btn-secondary btn-small" onclick="cambiarDiaPlanificador(1)">Siguiente ›</button>
+            <div class="card" style="padding: 1rem;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
+                    <h2 class="card-title" style="margin-bottom:0;">🗓️ Planificador</h2>
+                    <button type="button" onclick="alert('Toca un bloque y arrástralo para moverlo de horario.\n\nSi lo sueltas encima de otro bloque, ese bloque (y los que sigan) se corren automáticamente para no cruzarse.\n\n⚠️ Si mueves un hábito, se actualiza su horario habitual para todos los días en que se repite.')"
+                        style="border:2px solid var(--lavender); background:white; color:var(--purple); border-radius:50%; width:30px; height:30px; font-weight:700; flex-shrink:0;">ⓘ</button>
                 </div>
-                <div style="text-align:center; font-weight:700; color:var(--purple); text-transform:capitalize; margin-bottom:0.75rem;" id="planificadorFechaLabel"></div>
 
-                <div id="planificadorScroll" style="position:relative; height:65vh; overflow-y:auto; border:1px solid var(--lavender); border-radius:10px; background:white;">
+                <div style="display:flex; align-items:center; justify-content:center; gap:0.4rem; margin: 0.75rem 0 0.4rem;">
+                    <button class="btn btn-secondary btn-small" onclick="cambiarDiaPlanificador(-1)" style="padding:0.5rem 0.7rem;">‹</button>
+                    <input type="date" id="fechaPlanificador" class="date-selector" style="flex:1; min-width:0; text-align:center; padding:0.5rem;" onchange="renderizarPlanificador()">
+                    <button class="btn btn-secondary btn-small" onclick="cambiarDiaPlanificador(1)" style="padding:0.5rem 0.7rem;">›</button>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:center; gap:0.5rem; margin-bottom:0.6rem; flex-wrap:wrap;">
+                    <span style="font-weight:700; color:var(--purple); text-transform:capitalize; font-size:0.9rem;" id="planificadorFechaLabel"></span>
+                    <button class="btn btn-secondary btn-small" onclick="irHoyPlanificador()" style="padding:0.3rem 0.6rem; font-size:0.75rem;">Hoy</button>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:center; gap:0.5rem; margin-bottom:0.6rem;">
+                    <button class="toggle-btn" id="planifBtnModo" onclick="toggleModoPlanificador()" style="padding:0.4rem 0.8rem; font-size:0.78rem;">Ver día completo (00:00–23:59)</button>
+                </div>
+                <div id="planifAvisoFuera" style="display:none; text-align:center; font-size:0.75rem; color:#E65100; margin-bottom:0.5rem;"></div>
+
+                <div id="planificadorScroll" style="position:relative; overflow-y:auto; border:1px solid var(--lavender); border-radius:10px; background:white;">
                     <div id="planificadorTrack" style="position:relative;"></div>
                 </div>
 
-                <h3 style="color:var(--purple); margin:1.5rem 0 0.75rem;">+ Agregar bloque rápido</h3>
-                <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:flex-end;">
-                    <div class="filter-group" style="flex:2; min-width:140px;">
-                        <label class="filter-label">Nombre</label>
-                        <input type="text" class="search-box" id="planifNuevoNombre" placeholder="Ej: Reunión equipo">
+                <h3 style="color:var(--purple); margin:1.25rem 0 0.6rem; font-size:1rem;">+ Agregar bloque</h3>
+                <div style="display:flex; flex-direction:column; gap:0.6rem;">
+                    <input type="text" class="search-box" id="planifNuevoNombre" placeholder="Nombre del bloque">
+                    <div style="display:flex; gap:0.5rem;">
+                        <input type="time" class="search-box" id="planifNuevaHora" style="flex:1;">
+                        <input type="number" class="search-box" id="planifNuevaDuracion" min="5" step="5" value="30" placeholder="Min." style="flex:1;">
                     </div>
-                    <div class="filter-group" style="min-width:100px;">
-                        <label class="filter-label">Hora</label>
-                        <input type="time" class="search-box" id="planifNuevaHora">
-                    </div>
-                    <div class="filter-group" style="min-width:110px;">
-                        <label class="filter-label">Duración (min)</label>
-                        <input type="number" class="search-box" id="planifNuevaDuracion" min="5" step="5" value="30">
-                    </div>
-                    <div class="filter-group" style="min-width:120px;">
-                        <label class="filter-label">Tipo</label>
-                        <select class="filter-select" id="planifNuevoTipo">
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <select class="filter-select" id="planifNuevoTipo" style="flex:1;">
                             <option value="laboral">💼 Laboral</option>
                             <option value="recreativa">🎨 Recreativa</option>
                         </select>
+                        <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--purple); font-weight:600; flex-shrink:0;">
+                            Color
+                            <input type="color" id="planifNuevoColor" value="#1E88E5" style="width:38px; height:38px; border:2px solid var(--lavender); border-radius:8px; padding:2px; background:white;">
+                        </label>
                     </div>
-                    <button class="btn btn-primary btn-small" onclick="agregarBloquePlanificador()">+ Agregar</button>
+                    <button class="btn btn-primary" onclick="agregarBloquePlanificador()" style="width:100%;">+ Agregar bloque</button>
+                </div>
+
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; margin-top:1rem; font-size:0.75rem; color:#666;">
+                    <span><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--purple); margin-right:4px;"></span>Actividades</span>
+                    <span><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--gold); margin-right:4px;"></span>Hábitos</span>
+                    <span><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:#1E88E5; margin-right:4px;"></span>Bloques manuales (color a elección)</span>
                 </div>
             </div>
         </div>
@@ -2301,6 +2310,8 @@
                 necesito: document.getElementById('actividadNecesito').value,
                 subtareas: [...subtareasTemp],
                 completada: id ? (appData.actividades.find(a => a.id === parseInt(id))?.completada || false) : false,
+                origenPlanificador: id ? !!(appData.actividades.find(a => a.id === parseInt(id))?.origenPlanificador) : false,
+                color: id ? (appData.actividades.find(a => a.id === parseInt(id))?.color || null) : null,
                 creado: id ? (appData.actividades.find(a => a.id === parseInt(id))?.creado || new Date().toISOString()) : new Date().toISOString()
             };
 
@@ -2732,10 +2743,10 @@
                             <strong style="color:var(--purple); font-size:0.85rem;">${i + 1}. ${p.titulo}</strong>
                             <div style="font-size:0.8rem; color:#555; white-space:pre-wrap; margin-top:2px;">${p.contenido}</div>
                         </div>
-                        <div style="display:flex; flex-direction:column; gap:2px; flex-shrink:0;">
-                            <button type="button" onclick="moverPasoTemp(${i},-1)" ${i === 0 ? 'disabled' : ''} style="border:none; background:${i === 0 ? '#eee' : 'var(--lavender)'}; border-radius:3px; padding:0 4px; font-size:0.65rem; cursor:${i === 0 ? 'default' : 'pointer'}; line-height:1.4;">▲</button>
-                            <button type="button" onclick="moverPasoTemp(${i},1)" ${i === pasosTemp.length - 1 ? 'disabled' : ''} style="border:none; background:${i === pasosTemp.length - 1 ? '#eee' : 'var(--lavender)'}; border-radius:3px; padding:0 4px; font-size:0.65rem; cursor:${i === pasosTemp.length - 1 ? 'default' : 'pointer'}; line-height:1.4;">▼</button>
-                            <button type="button" class="btn btn-delete btn-small" onclick="eliminarPasoTemp(${i})" style="padding:0.2rem 0.5rem;">×</button>
+                        <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0;">
+                            <button type="button" onclick="moverPasoTemp(${i},-1)" ${i === 0 ? 'disabled' : ''} style="border:none; background:${i === 0 ? '#eee' : 'var(--lavender)'}; border-radius:5px; width:34px; height:30px; font-size:0.8rem; cursor:${i === 0 ? 'default' : 'pointer'};">▲</button>
+                            <button type="button" onclick="moverPasoTemp(${i},1)" ${i === pasosTemp.length - 1 ? 'disabled' : ''} style="border:none; background:${i === pasosTemp.length - 1 ? '#eee' : 'var(--lavender)'}; border-radius:5px; width:34px; height:30px; font-size:0.8rem; cursor:${i === pasosTemp.length - 1 ? 'default' : 'pointer'};">▼</button>
+                            <button type="button" class="btn btn-delete btn-small" onclick="eliminarPasoTemp(${i})" style="width:34px; height:30px; padding:0;">×</button>
                         </div>
                     </div>
                 </div>
@@ -2842,7 +2853,11 @@
         }
 
         // PLANIFICADOR DE JORNADA
-        const PLANIF_PXMIN = 1; // 1px por minuto = 60px por hora
+        const PLANIF_PXMIN = 0.85; // px por minuto
+        const PLANIF_GUTTER = 44;  // ancho de la columna de horas, en px
+        const PLANIF_RANGO_COMPACTO = { inicio: 9 * 60, fin: 19 * 60 };   // 09:00–19:00
+        const PLANIF_RANGO_COMPLETO = { inicio: 0, fin: 24 * 60 };        // 00:00–23:59
+        let planifModoCompleto = false;
 
         function minutosAHHMM(min) {
             min = Math.max(0, Math.min(1439, Math.round(min)));
@@ -2851,9 +2866,9 @@
             return `${h}:${m}`;
         }
 
-        function resetScrollPlanificador() {
-            const c = document.getElementById('planificadorScroll');
-            if (c) delete c.dataset.scrolled;
+        function toggleModoPlanificador() {
+            planifModoCompleto = !planifModoCompleto;
+            renderizarPlanificador();
         }
 
         function cambiarDiaPlanificador(delta) {
@@ -2861,13 +2876,11 @@
             const f = new Date((input.value || new Date().toISOString().split('T')[0]) + 'T00:00:00');
             f.setDate(f.getDate() + delta);
             input.value = f.toISOString().split('T')[0];
-            resetScrollPlanificador();
             renderizarPlanificador();
         }
 
         function irHoyPlanificador() {
             document.getElementById('fechaPlanificador').value = new Date().toISOString().split('T')[0];
-            resetScrollPlanificador();
             renderizarPlanificador();
         }
 
@@ -2891,7 +2904,7 @@
                 return new Date(a.fecha).toDateString() === fechaDia.toDateString();
             });
 
-            return [
+            const bloques = [
                 ...habitosDia.map(h => ({
                     tipo: 'habito', id: h.id, nombre: h.nombre,
                     inicio: getMinutosDelDia(h.hora),
@@ -2902,9 +2915,23 @@
                     tipo: 'actividad', id: a.id, nombre: a.nombre,
                     inicio: getMinutosDelDia(new Date(a.fecha).toTimeString().substring(0, 5)),
                     duracion: Math.max(5, Math.round(duracionAHoras(a.duracion, a.unidad || 'h') * 60)),
-                    tipoActividad: a.tipo, completado: !!a.completada
+                    tipoActividad: a.tipo, completado: !!a.completada,
+                    origenPlanificador: !!a.origenPlanificador, color: a.color || null
                 }))
-            ].sort((a, b) => a.inicio - b.inicio);
+            ].sort((a, b) => a.inicio - b.inicio || a.duracion - b.duracion);
+
+            // Asigna carriles (columnas) para que los bloques que se solapan se vean uno al lado del otro
+            const finesColumnas = [];
+            bloques.forEach(b => {
+                let col = finesColumnas.findIndex(fin => fin <= b.inicio);
+                if (col === -1) { col = finesColumnas.length; finesColumnas.push(0); }
+                finesColumnas[col] = b.inicio + b.duracion;
+                b._col = col;
+            });
+            const totalCols = Math.max(1, finesColumnas.length);
+            bloques.forEach(b => { b._totalCols = totalCols; });
+
+            return bloques;
         }
 
         function renderizarPlanificador() {
@@ -2916,58 +2943,89 @@
             const label = document.getElementById('planificadorFechaLabel');
             if (label) label.textContent = fechaDia.toLocaleDateString('es-CL', { weekday: 'long', day: '2-digit', month: 'long' });
 
+            const btnModo = document.getElementById('planifBtnModo');
+            if (btnModo) btnModo.textContent = planifModoCompleto ? 'Ver solo 9:00–19:00' : 'Ver día completo (00:00–23:59)';
+
+            const rango = planifModoCompleto ? PLANIF_RANGO_COMPLETO : PLANIF_RANGO_COMPACTO;
             const bloques = obtenerBloquesPlanificador(fechaStr);
             const track = document.getElementById('planificadorTrack');
-            if (!track) return;
+            const contenedorScroll = document.getElementById('planificadorScroll');
+            if (!track || !contenedorScroll) return;
+
+            const alturaTotal = (rango.fin - rango.inicio) * PLANIF_PXMIN;
+            contenedorScroll.style.height = alturaTotal + 'px';
+            track.style.height = alturaTotal + 'px';
 
             let horasHTML = '';
-            for (let h = 0; h < 24; h++) {
-                horasHTML += `<div class="planif-hora-linea" style="top:${h * 60 * PLANIF_PXMIN}px;"><span>${h.toString().padStart(2, '0')}:00</span></div>`;
+            for (let h = Math.ceil(rango.inicio / 60); h <= Math.floor(rango.fin / 60); h++) {
+                const top = (h * 60 - rango.inicio) * PLANIF_PXMIN;
+                horasHTML += `<div class="planif-hora-linea" style="top:${top}px;"><span>${h.toString().padStart(2, '0')}:00</span></div>`;
             }
 
             const ahora = new Date();
             let lineaAhoraHTML = '';
             if (fechaDia.toDateString() === ahora.toDateString()) {
                 const minAhora = ahora.getHours() * 60 + ahora.getMinutes();
-                lineaAhoraHTML = `<div class="planif-linea-ahora" style="top:${minAhora * PLANIF_PXMIN}px;"></div>`;
+                if (minAhora >= rango.inicio && minAhora <= rango.fin) {
+                    lineaAhoraHTML = `<div class="planif-linea-ahora" style="top:${(minAhora - rango.inicio) * PLANIF_PXMIN}px;"></div>`;
+                }
             }
 
+            let fueraDeRango = 0;
+            const anchoUtil = `(100% - ${PLANIF_GUTTER + 6}px)`;
             const bloquesHTML = bloques.map(b => {
-                const top = b.inicio * PLANIF_PXMIN;
-                const alto = Math.max(b.duracion * PLANIF_PXMIN, 20);
+                const finBloque = b.inicio + b.duracion;
+                if (finBloque <= rango.inicio || b.inicio >= rango.fin) { fueraDeRango++; return ''; }
+                const inicioVisible = Math.max(b.inicio, rango.inicio);
+                const finVisible = Math.min(finBloque, rango.fin);
+                const top = (inicioVisible - rango.inicio) * PLANIF_PXMIN;
+                const alto = Math.max((finVisible - inicioVisible) * PLANIF_PXMIN, 22);
                 const horaIni = minutosAHHMM(b.inicio);
-                const horaFin = minutosAHHMM(b.inicio + b.duracion);
+                const horaFin = minutosAHHMM(finBloque);
                 const esHabito = b.tipo === 'habito';
-                const color = esHabito ? 'var(--gold)' : 'var(--purple)';
-                const icono = esHabito ? '⚡' : (b.tipoActividad === 'recreativa' ? '🎨' : '📌');
+                let color;
+                if (esHabito) color = 'var(--gold)';
+                else if (b.origenPlanificador && b.color) color = b.color;
+                else color = 'var(--purple)';
+                const icono = esHabito ? '⚡' : (b.origenPlanificador ? '🟣' : (b.tipoActividad === 'recreativa' ? '🎨' : '📌'));
+                const anchoCol = `calc(${anchoUtil} / ${b._totalCols} - 3px)`;
+                const leftCol = `calc(${PLANIF_GUTTER}px + (${anchoUtil} / ${b._totalCols}) * ${b._col})`;
                 return `<div class="planif-bloque ${b.completado ? 'planif-completado' : ''}"
-                            style="top:${top}px; height:${alto}px; border-left-color:${color};"
-                            onmousedown="iniciarDragBloque(event,'${b.tipo}',${b.id},${b.inicio},${b.duracion})">
+                            style="top:${top}px; height:${alto}px; left:${leftCol}; width:${anchoCol}; background:${esHabito || (!b.origenPlanificador) ? 'var(--lavender-light)' : color + '22'}; border-left-color:${color};"
+                            onmousedown="iniciarDragBloque(event,'${b.tipo}',${b.id},${b.inicio},${b.duracion})"
+                            ontouchstart="iniciarDragBloque(event,'${b.tipo}',${b.id},${b.inicio},${b.duracion})">
                         <div class="planif-bloque-nombre">${icono} ${b.nombre}</div>
-                        <div class="planif-bloque-hora">${horaIni} - ${horaFin}</div>
+                        <div class="planif-bloque-hora">${horaIni}-${horaFin}</div>
                     </div>`;
             }).join('');
 
             track.innerHTML = horasHTML + lineaAhoraHTML + bloquesHTML;
-            track.style.height = (1440 * PLANIF_PXMIN) + 'px';
 
-            const contenedorScroll = document.getElementById('planificadorScroll');
-            if (contenedorScroll && !contenedorScroll.dataset.scrolled) {
-                const primerBloque = bloques[0];
-                const scrollMin = primerBloque ? Math.max(0, primerBloque.inicio - 60) : 360;
-                contenedorScroll.scrollTop = scrollMin * PLANIF_PXMIN;
-                contenedorScroll.dataset.scrolled = '1';
+            const aviso = document.getElementById('planifAvisoFuera');
+            if (aviso) {
+                if (!planifModoCompleto && fueraDeRango > 0) {
+                    aviso.style.display = 'block';
+                    aviso.textContent = `⚠️ ${fueraDeRango} bloque(s) fuera de 9:00–19:00. Toca "Ver día completo" para verlos.`;
+                } else {
+                    aviso.style.display = 'none';
+                }
             }
         }
 
         let planifDragState = null;
+
+        function obtenerYEvento(e) {
+            if (e.touches && e.touches.length) return e.touches[0].clientY;
+            if (e.changedTouches && e.changedTouches.length) return e.changedTouches[0].clientY;
+            return e.clientY;
+        }
 
         function iniciarDragBloque(e, tipo, id, inicioMin, duracionMin) {
             e.preventDefault();
             planifDragState = {
                 tipo, id,
                 elem: e.currentTarget,
-                startClientY: e.clientY,
+                startClientY: obtenerYEvento(e),
                 startTopMin: inicioMin,
                 duracionMin,
                 nuevoInicio: inicioMin,
@@ -2975,22 +3033,31 @@
             };
             document.addEventListener('mousemove', arrastrarBloquePlanif);
             document.addEventListener('mouseup', soltarBloquePlanif);
+            document.addEventListener('touchmove', arrastrarBloquePlanif, { passive: false });
+            document.addEventListener('touchend', soltarBloquePlanif);
+            document.addEventListener('touchcancel', soltarBloquePlanif);
         }
 
         function arrastrarBloquePlanif(e) {
             if (!planifDragState) return;
-            const deltaY = e.clientY - planifDragState.startClientY;
-            if (Math.abs(deltaY) > 4) planifDragState.moved = true;
-            const deltaMin = Math.round((deltaY / PLANIF_PXMIN) / 5) * 5;
+            if (e.cancelable) e.preventDefault();
+            const y = obtenerYEvento(e);
+            const deltaY = y - planifDragState.startClientY;
+            if (Math.abs(deltaY) > 6) planifDragState.moved = true;
+            const deltaMin = Math.round((deltaY / PLANIF_PXMIN) / 15) * 15; // ajusta en saltos de 15 min, más fácil con el dedo
             let nuevoInicio = planifDragState.startTopMin + deltaMin;
             nuevoInicio = Math.max(0, Math.min(nuevoInicio, 1440 - planifDragState.duracionMin));
             planifDragState.nuevoInicio = nuevoInicio;
-            planifDragState.elem.style.top = (nuevoInicio * PLANIF_PXMIN) + 'px';
+            const rango = planifModoCompleto ? PLANIF_RANGO_COMPLETO : PLANIF_RANGO_COMPACTO;
+            planifDragState.elem.style.top = Math.max(0, (nuevoInicio - rango.inicio) * PLANIF_PXMIN) + 'px';
         }
 
         function soltarBloquePlanif() {
             document.removeEventListener('mousemove', arrastrarBloquePlanif);
             document.removeEventListener('mouseup', soltarBloquePlanif);
+            document.removeEventListener('touchmove', arrastrarBloquePlanif);
+            document.removeEventListener('touchend', soltarBloquePlanif);
+            document.removeEventListener('touchcancel', soltarBloquePlanif);
             if (!planifDragState) return;
             const { tipo, id, moved, nuevoInicio } = planifDragState;
             planifDragState = null;
@@ -3046,6 +3113,7 @@
             const hora = document.getElementById('planifNuevaHora').value;
             const duracion = parseFloat(document.getElementById('planifNuevaDuracion').value);
             const tipo = document.getElementById('planifNuevoTipo').value;
+            const color = document.getElementById('planifNuevoColor').value;
             if (!nombre || !hora || !duracion || duracion <= 0) {
                 alert('Completa nombre, hora y duración para agregar el bloque.');
                 return;
@@ -3061,6 +3129,8 @@
                 prioridad: 'media',
                 completada: false,
                 subtareas: [],
+                origenPlanificador: true,
+                color,
                 creado: new Date().toISOString()
             };
             appData.actividades.push(nueva);
