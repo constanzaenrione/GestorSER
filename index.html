@@ -693,6 +693,17 @@
         /* Agenda semanal - actividad completable */
         .week-task-mini { cursor: pointer; }
         .week-task-mini:active { opacity: 0.7; }
+        /* Carta Gantt - vista de barras */
+        .ganttbar-scroll{ overflow-x:auto; border:1px solid #eee; border-radius:10px; }
+        .ganttbar-grid{ display:grid; }
+        .ganttbar-cell{ border-bottom:1px solid #f2f2f2; }
+        .ganttbar-head{ position:sticky; top:0; background:#fff; font-size:9px; text-align:center; padding:5px 1px; border-bottom:2px solid #333; color:#888; font-weight:700; z-index:3; }
+        .ganttbar-label-head{ position:sticky; top:0; left:0; background:#fff; z-index:4; border-bottom:2px solid #333; }
+        .ganttbar-arealabel{ padding:8px 10px; font-size:12px; font-weight:700; position:sticky; left:0; background:#fff; z-index:2; display:flex; align-items:center; gap:6px; cursor:pointer; }
+        .ganttbar-actlabel{ padding:6px 10px 6px 24px; font-size:11px; color:#666; position:sticky; left:0; background:#fff; z-index:2; }
+        .ganttbar-bar{ align-self:center; height:14px; border-radius:4px; margin:2px 1px; }
+        .ganttbar-chevron{ font-size:9px; display:inline-block; transition:transform .15s; }
+        .ganttbar-chevron.open{ transform:rotate(90deg); }
     </style>
 </head>
 <body>
@@ -3463,6 +3474,74 @@
             renderizarGantt();
         }
 
+        let ganttAreasAbiertas = new Set();
+        function toggleAreaGanttBarras(key) {
+            if (ganttAreasAbiertas.has(key)) ganttAreasAbiertas.delete(key); else ganttAreasAbiertas.add(key);
+            renderizarGantt();
+        }
+
+        function fechasEntreGantt(minStr, maxStr) {
+            const out = [];
+            let d = new Date(minStr + 'T00:00:00');
+            const fin = new Date(maxStr + 'T00:00:00');
+            while (d <= fin) { out.push(d.toISOString().split('T')[0]); d.setDate(d.getDate() + 1); }
+            return out;
+        }
+
+        function renderizarGanttBarras(actsProyecto) {
+            const cont = document.getElementById('ganttContenido');
+            if (actsProyecto.length === 0) { cont.innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Este proyecto todavía no tiene actividades con fecha. Agrégalas desde 📋 Actividades o con los botones de arriba.</p>'; return; }
+
+            const fechas = actsProyecto.map(a => a.fecha.split('T')[0]);
+            const minF = fechas.reduce((a,b) => a < b ? a : b);
+            const maxF = fechas.reduce((a,b) => a > b ? a : b);
+            const dias = fechasEntreGantt(minF, maxF);
+            const porArea = agruparActividadesPorArea(actsProyecto);
+            const areasOrdenadas = Object.keys(porArea);
+
+            let html = `<div class="ganttbar-scroll"><div class="ganttbar-grid" style="grid-template-columns:190px repeat(${dias.length}, 26px);">`;
+            html += `<div class="ganttbar-cell ganttbar-label-head" style="grid-row:1;grid-column:1;"></div>`;
+            dias.forEach((f, i) => {
+                const d = new Date(f + 'T00:00:00');
+                html += `<div class="ganttbar-cell ganttbar-head" style="grid-row:1;grid-column:${i+2};">${d.getDate()}/${d.getMonth()+1}</div>`;
+            });
+
+            let r = 2;
+            areasOrdenadas.forEach((area, ai) => {
+                const color = GANTT_COLORES[ai % GANTT_COLORES.length];
+                const key = 'area_' + ai;
+                const abierto = ganttAreasAbiertas.has(key);
+
+                dias.forEach((f, i) => { html += `<div class="ganttbar-cell" style="grid-row:${r};grid-column:${i+2};"></div>`; });
+                html += `<div class="ganttbar-arealabel" style="grid-row:${r};grid-column:1;color:${color};" onclick="toggleAreaGanttBarras('${key}')"><span class="ganttbar-chevron ${abierto?'open':''}">▸</span>${area}</div>`;
+                dias.forEach((f, i) => {
+                    const actsDia = porArea[area].filter(a => a.fecha.split('T')[0] === f);
+                    if (actsDia.length === 0) return;
+                    const doneCount = actsDia.filter(a => a.completada).length;
+                    const frac = doneCount / actsDia.length;
+                    const opacity = (0.18 + 0.82 * frac).toFixed(2);
+                    html += `<div class="ganttbar-bar" style="grid-row:${r};grid-column:${i+2};background:${color};opacity:${opacity};"></div>`;
+                });
+                r++;
+
+                if (abierto) {
+                    porArea[area].forEach(a => {
+                        const f = a.fecha.split('T')[0];
+                        const idx = dias.indexOf(f);
+                        dias.forEach((fx, i) => { html += `<div class="ganttbar-cell" style="grid-row:${r};grid-column:${i+2};"></div>`; });
+                        html += `<div class="ganttbar-actlabel" style="grid-row:${r};grid-column:1;">${a.nombre}</div>`;
+                        if (idx >= 0) {
+                            const opacity = a.completada ? 1 : 0.35;
+                            html += `<div class="ganttbar-bar" onclick="toggleCompletada(${a.id})" style="grid-row:${r};grid-column:${idx+2};background:${color};opacity:${opacity};cursor:pointer;"></div>`;
+                        }
+                        r++;
+                    });
+                }
+            });
+            html += `</div></div>`;
+            cont.innerHTML = html;
+        }
+
         function renderizarGantt() {
             const sel = document.getElementById('ganttProyectoSelect');
             if (!sel) return;
@@ -3478,10 +3557,7 @@
             const actsProyecto = appData.actividades.filter(a => a.proyectoId === proyectoId && a.fecha);
 
             if (ganttSubvista === 'carta') {
-                const cont = document.getElementById('ganttContenido');
-                if (actsProyecto.length === 0) { cont.innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Este proyecto todavía no tiene actividades con fecha. Agrégalas desde 📋 Actividades o con los botones de arriba.</p>'; return; }
-                const hoy = new Date(); hoy.setHours(0,0,0,0);
-                cont.innerHTML = renderizarGrupoAreasGantt(agruparActividadesPorArea(actsProyecto), a => { const f = new Date(a.fecha); f.setHours(0,0,0,0); return !a.completada && f < hoy; });
+                renderizarGanttBarras(actsProyecto);
 
             } else if (ganttSubvista === 'hoy') {
                 const cont = document.getElementById('ganttHoyContenido');
