@@ -907,8 +907,12 @@
                 </div>
 
                 <div id="importadorGantt" style="display:none; border:1px solid #e0d4f7; border-radius:10px; padding:0.85rem; margin-bottom:1rem; background:#faf8fd;">
-                    <p style="font-size:0.8rem; color:#666; margin-bottom:0.5rem;">Pega aquí el JSON de la carta Gantt (te lo entrego ya armado). Si el proyecto ya existe, se actualiza sin duplicar; si no existe, se crea.</p>
-                    <textarea id="ganttImportText" class="form-textarea" style="min-height:120px; font-family:monospace; font-size:0.78rem;" placeholder='{"proyecto": {...}, "actividades": [...] }'></textarea>
+                    <p style="font-size:0.8rem; color:#666; margin-bottom:0.5rem;">Sube el archivo .json de la carta Gantt (te lo entrego ya armado). Si el proyecto ya existe, se actualiza sin duplicar; si no existe, se crea.</p>
+                    <input type="file" id="ganttImportFile" accept=".json,application/json" style="margin-bottom:0.5rem; font-size:0.8rem;" onchange="cargarArchivoGantt(event)">
+                    <details style="margin-bottom:0.5rem;">
+                        <summary style="font-size:0.75rem; color:#999; cursor:pointer;">o pegar el JSON como texto</summary>
+                        <textarea id="ganttImportText" class="form-textarea" style="min-height:120px; font-family:monospace; font-size:0.78rem; margin-top:0.4rem;" placeholder='{"proyecto": {...}, "actividades": [...] }'></textarea>
+                    </details>
                     <div style="display:flex; gap:0.5rem; margin-top:0.5rem; align-items:center;">
                         <button type="button" class="btn btn-primary btn-small" onclick="importarGantt()">Importar</button>
                         <span id="ganttImportResultado" style="font-size:0.78rem; color:var(--green);"></span>
@@ -3337,6 +3341,22 @@
         function toggleImportadorGantt() {
             const el = document.getElementById('importadorGantt');
             el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function cargarArchivoGantt(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const resultado = document.getElementById('ganttImportResultado');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('ganttImportText').value = e.target.result;
+                importarGantt();
+            };
+            reader.onerror = function() {
+                resultado.style.color = '#e53935';
+                resultado.textContent = 'No se pudo leer el archivo. Intenta pegarlo como texto.';
+            };
+            reader.readAsText(file, 'UTF-8');
         }
 
         function importarGantt() {
