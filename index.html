@@ -718,6 +718,7 @@
         <button class="nav-tab" onclick="mostrarVista('proyectos')">🎯 Proyectos</button>
         <button class="nav-tab" onclick="mostrarVista('todasActividades')">📋 Actividades</button>
         <button class="nav-tab" onclick="mostrarVista('agenda')">📅 Agenda</button>
+        <button class="nav-tab" onclick="mostrarVista('gantt')">🗂️ Carta Gantt</button>
         <button class="nav-tab" onclick="mostrarVista('planificador')">🗓️ Planificador</button>
         <button class="nav-tab" onclick="mostrarVista('habitos')">⚡ Hábitos</button>
         <button class="nav-tab" onclick="mostrarVista('rituales')">🌟 Rituales</button>
@@ -848,6 +849,56 @@
                     <input type="date" id="fechaAgenda" class="date-selector" onchange="renderizarAgenda()">
                 </div>
                 <div id="agendaContenido"></div>
+            </div>
+        </div>
+
+        <!-- GANTT -->
+        <div id="gantt" class="view">
+            <div class="card">
+                <h2 class="card-title">Carta Gantt</h2>
+                <div style="display:flex; gap:0.5rem; align-items:flex-end; flex-wrap:wrap; margin-bottom:0.75rem;">
+                    <div class="form-group" style="max-width:320px; flex:1; margin-bottom:0;">
+                        <label class="form-label">Proyecto</label>
+                        <select class="form-select" id="ganttProyectoSelect" onchange="renderizarGantt()"></select>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="toggleImportadorGantt()">📥 Importar carta Gantt</button>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="toggleCargaRapida()">➕ Agregar paso a paso</button>
+                </div>
+
+                <div id="cargaRapidaGantt" style="display:none; border:1px solid #e0d4f7; border-radius:10px; padding:0.85rem; margin-bottom:1rem; background:#faf8fd;">
+                    <div id="cargaRapidaSinProyecto" style="display:none; margin-bottom:0.6rem;">
+                        <label class="form-label">Nombre del proyecto nuevo</label>
+                        <div style="display:flex; gap:0.5rem;">
+                            <input type="text" id="crNombreProyecto" class="form-input" placeholder="Ej: Mi negocio principal" style="flex:1;">
+                            <button type="button" class="btn btn-primary btn-small" onclick="crearProyectoRapido()">Crear</button>
+                        </div>
+                    </div>
+                    <div id="cargaRapidaForm">
+                        <p style="font-size:0.78rem; color:#666; margin-bottom:0.5rem;">Cada actividad que agregues aparece abajo al instante. La hora del siguiente campo se autocompleta apenas termina la anterior — solo cambia lo que necesites.</p>
+                        <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem; flex-wrap:wrap;">
+                            <input type="text" id="crArea" class="form-input" list="areasSugeridas" placeholder="Área (ej: Venta directa)" style="flex:1; min-width:140px;">
+                            <input type="text" id="crNombre" class="form-input" placeholder="Nombre de la actividad" style="flex:2; min-width:180px;">
+                        </div>
+                        <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem; flex-wrap:wrap;">
+                            <input type="date" id="crFecha" class="form-input" style="flex:1; min-width:130px;">
+                            <input type="time" id="crHora" class="form-input" style="flex:1; min-width:100px;">
+                            <input type="number" id="crDuracion" class="form-input" min="1" step="1" placeholder="Min" style="width:70px;">
+                        </div>
+                        <button type="button" class="btn btn-primary btn-small" onclick="agregarActividadRapida()">Agregar y seguir</button>
+                        <span id="crResultado" style="font-size:0.78rem; color:var(--green); margin-left:0.5rem;"></span>
+                    </div>
+                </div>
+
+                <div id="importadorGantt" style="display:none; border:1px solid #e0d4f7; border-radius:10px; padding:0.85rem; margin-bottom:1rem; background:#faf8fd;">
+                    <p style="font-size:0.8rem; color:#666; margin-bottom:0.5rem;">Pega aquí el JSON de la carta Gantt (te lo entrego ya armado). Si el proyecto ya existe, se actualiza sin duplicar; si no existe, se crea.</p>
+                    <textarea id="ganttImportText" class="form-textarea" style="min-height:120px; font-family:monospace; font-size:0.78rem;" placeholder='{"proyecto": {...}, "actividades": [...] }'></textarea>
+                    <div style="display:flex; gap:0.5rem; margin-top:0.5rem; align-items:center;">
+                        <button type="button" class="btn btn-primary btn-small" onclick="importarGantt()">Importar</button>
+                        <span id="ganttImportResultado" style="font-size:0.78rem; color:var(--green);"></span>
+                    </div>
+                </div>
+
+                <div id="ganttContenido"></div>
             </div>
         </div>
 
@@ -1182,7 +1233,13 @@
                 <input type="hidden" id="actividadId">
                 <div class="form-group">
                     <label class="form-label">Proyecto *</label>
-                    <select class="form-select" id="actividadProyecto" required></select>
+                    <select class="form-select" id="actividadProyecto" required onchange="actualizarAreasSugeridas()"></select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Área <span style="font-weight:400; color:#888; font-size:0.85rem;">(dentro del proyecto, ej. Venta directa, Bases de negocio)</span></label>
+                    <input type="text" class="form-input" id="actividadArea" list="areasSugeridas" placeholder="Ej: Venta directa">
+                    <datalist id="areasSugeridas"></datalist>
                 </div>
 
                 <div class="form-group">
@@ -1818,6 +1875,7 @@
             if (vista === 'proyectos') renderizarProyectos();
             if (vista === 'todasActividades') renderizarTodasActividades();
             if (vista === 'agenda') renderizarAgenda();
+            if (vista === 'gantt') renderizarGantt();
             if (vista === 'planificador') renderizarPlanificador();
             if (vista === 'habitos') { renderizarHabitos(); if (vistaHabitosActual === 'dashboard') renderizarDashboardHabitos(); }
             if (vista === 'rituales') renderizarRituales();
@@ -1856,6 +1914,13 @@
             abrirModal('modalProyecto');
         }
         
+        function actualizarAreasSugeridas() {
+            const proyectoId = parseInt(document.getElementById('actividadProyecto').value);
+            const areas = [...new Set(appData.actividades.filter(a => a.proyectoId === proyectoId && a.area).map(a => a.area))];
+            const dl = document.getElementById('areasSugeridas');
+            if (dl) dl.innerHTML = areas.map(ar => `<option value="${ar}"></option>`).join('');
+        }
+
         function abrirModalActividad(id = null) {
             const selRitual = document.getElementById('actividadRitual');
             if (selRitual) {
@@ -1866,6 +1931,7 @@
                 const a = appData.actividades.find(ac => ac.id === id);
                 document.getElementById('actividadId').value = a.id;
                 document.getElementById('actividadProyecto').value = a.proyectoId;
+                document.getElementById('actividadArea').value = a.area || '';
                 document.getElementById('actividadNombre').value = a.nombre;
                 document.getElementById('actividadCreencia').value = a.creencia || '';
                 document.getElementById('actividadFecha').value = a.fecha;
@@ -1881,12 +1947,14 @@
                 renderizarSubtareasTemp();
                 document.getElementById('tituloModalActividad').textContent = 'Editar Actividad';
             } else {
+                document.getElementById('actividadArea').value = '';
                 document.getElementById('actividadUnidad').value = 'h';
                 document.querySelector('input[name="actividadTipo"][value="laboral"]').checked = true;
                 subtareasTemp = [];
                 renderizarSubtareasTemp();
                 document.getElementById('tituloModalActividad').textContent = 'Nueva Actividad';
             }
+            actualizarAreasSugeridas();
             abrirModal('modalActividad');
         }
         
@@ -2298,6 +2366,7 @@
             const actividad = {
                 id: id ? parseInt(id) : Date.now(),
                 proyectoId: parseInt(document.getElementById('actividadProyecto').value),
+                area: document.getElementById('actividadArea').value.trim(),
                 nombre: document.getElementById('actividadNombre').value,
                 creencia: document.getElementById('actividadCreencia').value,
                 fecha: document.getElementById('actividadFecha').value,
@@ -3152,6 +3221,216 @@
             const selectorFecha = document.getElementById('fechaAgenda');
             if (selectorFecha) selectorFecha.style.display = vista === 'sinagendar' ? 'none' : '';
             renderizarAgenda();
+        }
+
+        function toggleCargaRapida() {
+            const el = document.getElementById('cargaRapidaGantt');
+            const mostrar = el.style.display === 'none';
+            el.style.display = mostrar ? 'block' : 'none';
+            if (!mostrar) return;
+
+            const sinProyectos = appData.proyectos.length === 0;
+            document.getElementById('cargaRapidaSinProyecto').style.display = sinProyectos ? 'block' : 'none';
+            document.getElementById('cargaRapidaForm').style.display = sinProyectos ? 'none' : 'block';
+            if (!sinProyectos && !document.getElementById('crFecha').value) {
+                document.getElementById('crFecha').value = new Date().toISOString().split('T')[0];
+                document.getElementById('crHora').value = '09:00';
+                document.getElementById('crDuracion').value = 15;
+            }
+        }
+
+        function crearProyectoRapido() {
+            const nombre = document.getElementById('crNombreProyecto').value.trim();
+            if (!nombre) return;
+            const proyecto = {
+                id: Date.now(),
+                nombre,
+                smart: { especifica: '', medible: '', alcanzable: '', relevante: '', tiempo: '' },
+                fechaLimite: '',
+                creado: new Date().toISOString()
+            };
+            appData.proyectos.push(proyecto);
+            guardarDatos();
+            const selGantt = document.getElementById('ganttProyectoSelect');
+            renderizarGantt();
+            selGantt.value = proyecto.id;
+            renderizarGantt();
+            document.getElementById('cargaRapidaSinProyecto').style.display = 'none';
+            document.getElementById('cargaRapidaForm').style.display = 'block';
+            document.getElementById('crFecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('crHora').value = '09:00';
+            document.getElementById('crDuracion').value = 15;
+            document.getElementById('crArea').focus();
+        }
+
+        function agregarActividadRapida() {
+            const resultado = document.getElementById('crResultado');
+            const proyectoId = parseInt(document.getElementById('ganttProyectoSelect').value);
+            const area = document.getElementById('crArea').value.trim();
+            const nombre = document.getElementById('crNombre').value.trim();
+            const fecha = document.getElementById('crFecha').value;
+            const hora = document.getElementById('crHora').value;
+            const duracion = parseInt(document.getElementById('crDuracion').value);
+
+            if (!proyectoId) { resultado.style.color = '#e53935'; resultado.textContent = 'Elige o crea un proyecto primero.'; return; }
+            if (!nombre) { resultado.style.color = '#e53935'; resultado.textContent = 'Falta el nombre de la actividad.'; return; }
+            if (!fecha || !hora) { resultado.style.color = '#e53935'; resultado.textContent = 'Falta fecha u hora.'; return; }
+            if (!duracion || duracion < 1) { resultado.style.color = '#e53935'; resultado.textContent = 'Falta la duración en minutos.'; return; }
+
+            const fechaHora = `${fecha}T${hora}`;
+            const ganttKey = proyectoId + '|' + area + '|' + nombre + '|' + fechaHora;
+            appData.actividades.push({
+                id: Date.now(),
+                proyectoId, area, nombre,
+                creencia: '', fecha: fechaHora, duracion, unidad: 'min',
+                tipo: 'laboral', prioridad: 'media', ritualId: null,
+                limitacion: '', necesito: '', subtareas: [],
+                completada: false, origenPlanificador: false, color: null,
+                creado: new Date().toISOString(), ganttKey
+            });
+            guardarDatos();
+            renderizarTodo();
+
+            const [hh, mm] = hora.split(':').map(Number);
+            const totalMin = hh * 60 + mm + duracion;
+            const nuevaHora = `${String(Math.floor(totalMin / 60) % 24).padStart(2,'0')}:${String(totalMin % 60).padStart(2,'0')}`;
+            document.getElementById('crHora').value = nuevaHora;
+            document.getElementById('crNombre').value = '';
+            document.getElementById('crNombre').focus();
+            resultado.style.color = 'var(--green)';
+            resultado.textContent = `✓ "${nombre}" agregada.`;
+        }
+
+        function toggleImportadorGantt() {
+            const el = document.getElementById('importadorGantt');
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function importarGantt() {
+            const raw = document.getElementById('ganttImportText').value.trim();
+            const resultado = document.getElementById('ganttImportResultado');
+            let payload;
+            try {
+                payload = JSON.parse(raw);
+            } catch (e) {
+                resultado.style.color = '#e53935';
+                resultado.textContent = 'JSON inválido. Revisa que esté bien copiado, completo.';
+                return;
+            }
+            if (!payload.proyecto || !payload.proyecto.nombre || !Array.isArray(payload.actividades)) {
+                resultado.style.color = '#e53935';
+                resultado.textContent = 'Formato inesperado: falta "proyecto.nombre" o "actividades".';
+                return;
+            }
+
+            let proyecto = appData.proyectos.find(p => p.nombre === payload.proyecto.nombre);
+            if (!proyecto) {
+                proyecto = {
+                    id: Date.now(),
+                    nombre: payload.proyecto.nombre,
+                    smart: { especifica: '', medible: '', alcanzable: '', relevante: '', tiempo: '' },
+                    fechaLimite: payload.proyecto.fechaLimite || '',
+                    creado: new Date().toISOString()
+                };
+                appData.proyectos.push(proyecto);
+            }
+
+            let creadas = 0, actualizadas = 0;
+            payload.actividades.forEach((item, i) => {
+                const ganttKey = proyecto.id + '|' + (item.area || '') + '|' + item.nombre + '|' + item.fecha;
+                const existente = appData.actividades.find(a => a.ganttKey === ganttKey);
+                const base = {
+                    proyectoId: proyecto.id,
+                    area: item.area || '',
+                    nombre: item.nombre,
+                    creencia: '',
+                    fecha: item.fecha,
+                    duracion: item.duracion,
+                    unidad: item.unidad || 'min',
+                    tipo: 'laboral',
+                    prioridad: 'media',
+                    ritualId: null,
+                    limitacion: '',
+                    necesito: '',
+                    subtareas: [],
+                    ganttKey
+                };
+                if (existente) {
+                    Object.assign(existente, base);
+                    actualizadas++;
+                } else {
+                    appData.actividades.push({
+                        id: Date.now() + i,
+                        completada: false,
+                        origenPlanificador: false,
+                        color: null,
+                        creado: new Date().toISOString(),
+                        ...base
+                    });
+                    creadas++;
+                }
+            });
+
+            guardarDatos();
+            renderizarTodo();
+            const selGantt = document.getElementById('ganttProyectoSelect');
+            if (selGantt) selGantt.value = proyecto.id;
+            renderizarGantt();
+            resultado.style.color = 'var(--green)';
+            resultado.textContent = `✓ Listo: ${creadas} actividades nuevas, ${actualizadas} actualizadas en "${proyecto.nombre}".`;
+        }
+
+        function renderizarGantt() {
+            const sel = document.getElementById('ganttProyectoSelect');
+            if (!sel) return;
+            const seleccionPrevia = sel.value;
+            sel.innerHTML = appData.proyectos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            if (appData.proyectos.length === 0) {
+                document.getElementById('ganttContenido').innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Crea un proyecto primero en 🎯 Proyectos, luego agrégale actividades con un Área para verlas aquí como carta Gantt.</p>';
+                return;
+            }
+            if (seleccionPrevia && appData.proyectos.some(p => p.id === parseInt(seleccionPrevia))) sel.value = seleccionPrevia;
+            const proyectoId = parseInt(sel.value);
+
+            const actsProyecto = appData.actividades.filter(a => a.proyectoId === proyectoId && a.fecha);
+            if (actsProyecto.length === 0) {
+                document.getElementById('ganttContenido').innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Este proyecto todavía no tiene actividades con fecha. Agrégalas desde 📋 Actividades, indicando el Área.</p>';
+                return;
+            }
+
+            const hoy = new Date(); hoy.setHours(0,0,0,0);
+            const porArea = {};
+            actsProyecto.forEach(a => {
+                const area = a.area || 'Sin área';
+                (porArea[area] = porArea[area] || []).push(a);
+            });
+            Object.values(porArea).forEach(lista => lista.sort((x,y) => new Date(x.fecha) - new Date(y.fecha)));
+
+            const coloresArea = ['#4B168E', '#A0740F', '#7C4DBC', '#C9932E', '#1E88E5', '#00897B'];
+            let html = '';
+            Object.keys(porArea).forEach((area, i) => {
+                const color = coloresArea[i % coloresArea.length];
+                html += `<div style="margin-bottom:1.25rem;">
+                    <div style="font-weight:700; color:${color}; font-size:0.92rem; margin-bottom:0.5rem; display:flex; align-items:center; gap:6px;">
+                        <span style="width:10px;height:10px;border-radius:3px;background:${color};display:inline-block;"></span>${area}
+                    </div>`;
+                porArea[area].forEach(a => {
+                    const fechaAct = new Date(a.fecha);
+                    const fechaSolo = new Date(fechaAct); fechaSolo.setHours(0,0,0,0);
+                    const atrasada = !a.completada && fechaSolo < hoy;
+                    const fechaTexto = fechaAct.toLocaleDateString('es-CL', { weekday:'short', day:'numeric', month:'short' });
+                    const horaTexto = fechaAct.toTimeString().substring(0,5);
+                    html += `<div style="display:flex; align-items:center; gap:10px; padding:8px 10px; margin-bottom:6px; border-radius:8px; background:${atrasada ? '#FFF3E0' : '#fafafa'}; border:1px solid ${atrasada ? '#F9A825' : '#eee'};">
+                        <div onclick="toggleCompletada(${a.id})" style="width:18px;height:18px;border-radius:5px;border:2px solid ${color};flex-shrink:0;cursor:pointer;background:${a.completada ? color : 'transparent'};"></div>
+                        <div style="flex:1;">
+                            <div style="font-size:0.85rem; font-weight:500; ${a.completada ? 'text-decoration:line-through;color:#aaa;' : ''}">${a.nombre}</div>
+                            <div style="font-size:0.72rem; color:${atrasada ? '#E65100' : '#888'};">${atrasada ? 'Atrasada · ' : ''}${fechaTexto} · ${horaTexto} · ${a.duracion}${a.unidad || 'h'}</div>
+                        </div>
+                    </div>`;
+                });
+                html += `</div>`;
+            });
+            document.getElementById('ganttContenido').innerHTML = html;
         }
 
         function renderizarAgenda() {
@@ -4530,6 +4809,7 @@
             renderizarProyectos();
             renderizarTodasActividades();
             renderizarAgenda();
+            renderizarGantt();
             renderizarPlanificador();
             renderizarHabitos();
             if (vistaHabitosActual === 'dashboard') renderizarDashboardHabitos();
@@ -4662,28 +4942,36 @@
         function renderizarBloquesAvance(fecha, entry) {
             const cont = document.getElementById('bloquesTrabajoAvance');
             if (!cont) return;
-            const bloques = appData.config?.bloques || [];
-            if (bloques.length === 0) {
-                cont.innerHTML = '<p style="font-size:0.82rem;color:#aaa;">Sin bloques de trabajo definidos. Configúralos en ⚙️ Parámetros.</p>';
+            const proyectos = appData.proyectos || [];
+            if (proyectos.length === 0) {
+                cont.innerHTML = '<p style="font-size:0.82rem;color:#aaa;">Sin proyectos definidos. Crea uno en 🎯 Proyectos.</p>';
                 return;
             }
             const bloquesData = _bloquesEntradaActual;
-            cont.innerHTML = `<div style="font-weight:700;color:var(--purple);margin-bottom:0.75rem;font-size:0.88rem;">🏗️ Bloques de trabajo</div>` +
-                bloques.map(b => {
-                    const bd = bloquesData[b.id] || {};
+            const fechaDia = new Date(fecha + 'T00:00:00').toDateString();
+            cont.innerHTML = `<div style="font-weight:700;color:var(--purple);margin-bottom:0.75rem;font-size:0.88rem;">🏗️ Proyectos</div>` +
+                proyectos.map(p => {
+                    const bd = bloquesData[p.id] || {};
+                    const actsDelDia = appData.actividades.filter(a =>
+                        a.proyectoId === p.id && a.fecha && new Date(a.fecha).toDateString() === fechaDia
+                    ).sort((x,y) => new Date(x.fecha) - new Date(y.fecha));
+                    if (actsDelDia.length === 0) return '';
+                    const resumenPlan = actsDelDia.map(a => `${new Date(a.fecha).toTimeString().substring(0,5)} ${a.completada ? '✓' : '○'} ${a.nombre}${a.area ? ' (' + a.area + ')' : ''}`).join('<br>');
+                    if (!bd.objetivo) bd.objetivo = actsDelDia.map(a => a.nombre).join(' · ');
                     return `<div style="border:1px solid #e0d4f7;border-radius:10px;padding:0.75rem;margin-bottom:0.75rem;">
-                        <div style="font-weight:700;font-size:0.9rem;color:var(--purple);margin-bottom:0.5rem;">${b.nombre}</div>
-                        <div style="font-size:0.8rem;color:#666;margin-bottom:2px;">Objetivo del día</div>
-                        <textarea class="form-textarea" style="min-height:45px;margin-bottom:0.4rem;font-size:0.85rem;" placeholder="¿Qué quiero lograr en este bloque hoy?"
-                            oninput="_bloquesEntradaActual[${b.id}] = _bloquesEntradaActual[${b.id}] || {}; _bloquesEntradaActual[${b.id}].objetivo = this.value">${bd.objetivo||''}</textarea>
+                        <div style="font-weight:700;font-size:0.9rem;color:var(--purple);margin-bottom:0.5rem;">${p.nombre}</div>
+                        <div style="font-size:0.75rem;color:#888;background:#faf8fd;border-radius:6px;padding:6px 8px;margin-bottom:0.5rem;line-height:1.5;">${resumenPlan}</div>
+                        <div style="font-size:0.8rem;color:#666;margin-bottom:2px;">Objetivo del día <span style="font-weight:400;color:#aaa;">(autocompletado, editable)</span></div>
+                        <textarea class="form-textarea" style="min-height:45px;margin-bottom:0.4rem;font-size:0.85rem;" placeholder="¿Qué quiero lograr en este proyecto hoy?"
+                            oninput="_bloquesEntradaActual[${p.id}] = _bloquesEntradaActual[${p.id}] || {}; _bloquesEntradaActual[${p.id}].objetivo = this.value">${bd.objetivo||''}</textarea>
                         <div style="font-size:0.8rem;color:#666;margin-bottom:2px;">Avance</div>
                         <textarea class="form-textarea" style="min-height:45px;margin-bottom:0.4rem;font-size:0.85rem;" placeholder="¿Qué avancé?"
-                            oninput="_bloquesEntradaActual[${b.id}] = _bloquesEntradaActual[${b.id}] || {}; _bloquesEntradaActual[${b.id}].avance = this.value">${bd.avance||''}</textarea>
+                            oninput="_bloquesEntradaActual[${p.id}] = _bloquesEntradaActual[${p.id}] || {}; _bloquesEntradaActual[${p.id}].avance = this.value">${bd.avance||''}</textarea>
                         <div style="font-size:0.8rem;color:#666;margin-bottom:2px;">Pendiente</div>
                         <textarea class="form-textarea" style="min-height:40px;font-size:0.85rem;" placeholder="¿Qué queda pendiente?"
-                            oninput="_bloquesEntradaActual[${b.id}] = _bloquesEntradaActual[${b.id}] || {}; _bloquesEntradaActual[${b.id}].pendiente = this.value">${bd.pendiente||''}</textarea>
+                            oninput="_bloquesEntradaActual[${p.id}] = _bloquesEntradaActual[${p.id}] || {}; _bloquesEntradaActual[${p.id}].pendiente = this.value">${bd.pendiente||''}</textarea>
                     </div>`;
-                }).join('');
+                }).join('') || '<p style="font-size:0.82rem;color:#aaa;">Ningún proyecto tiene actividades programadas para hoy.</p>';
         }
 
         function actualizarRingCompletitud(entry) {
