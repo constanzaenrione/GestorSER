@@ -865,6 +865,12 @@
                     <button type="button" class="btn btn-secondary btn-small" onclick="toggleCargaRapida()">➕ Agregar paso a paso</button>
                 </div>
 
+                <div style="display:flex; gap:0.4rem; margin-bottom:0.85rem; border-bottom:1px solid #eee; padding-bottom:0.6rem;">
+                    <button type="button" id="ganttTabCarta" class="btn btn-small" onclick="cambiarSubvistaGantt('carta')" style="background:var(--purple); color:#fff;">📊 Carta Gantt</button>
+                    <button type="button" id="ganttTabHoy" class="btn btn-secondary btn-small" onclick="cambiarSubvistaGantt('hoy')">☀️ Hoy</button>
+                    <button type="button" id="ganttTabDia" class="btn btn-secondary btn-small" onclick="cambiarSubvistaGantt('dia')">📅 Revisar día</button>
+                </div>
+
                 <div id="cargaRapidaGantt" style="display:none; border:1px solid #e0d4f7; border-radius:10px; padding:0.85rem; margin-bottom:1rem; background:#faf8fd;">
                     <div id="cargaRapidaSinProyecto" style="display:none; margin-bottom:0.6rem;">
                         <label class="form-label">Nombre del proyecto nuevo</label>
@@ -898,7 +904,23 @@
                     </div>
                 </div>
 
-                <div id="ganttContenido"></div>
+                <div id="ganttSubvistaCarta">
+                    <div id="ganttContenido"></div>
+                </div>
+
+                <div id="ganttSubvistaHoy" style="display:none;">
+                    <div id="ganttHoyContenido"></div>
+                </div>
+
+                <div id="ganttSubvistaDia" style="display:none;">
+                    <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.85rem;">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="cambiarDiaGantt(-1)">‹</button>
+                        <input type="date" id="ganttDiaFecha" class="form-input" style="max-width:170px;" onchange="ganttFechaRevision=this.value; renderizarGantt();">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="cambiarDiaGantt(1)">›</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="irAHoyGantt()">Hoy</button>
+                    </div>
+                    <div id="ganttDiaContenido"></div>
+                </div>
             </div>
         </div>
 
@@ -3380,57 +3402,109 @@
             resultado.textContent = `✓ Listo: ${creadas} actividades nuevas, ${actualizadas} actualizadas en "${proyecto.nombre}".`;
         }
 
+        let ganttSubvista = 'carta';
+        let ganttFechaRevision = new Date().toISOString().split('T')[0];
+        const GANTT_COLORES = ['#4B168E', '#A0740F', '#7C4DBC', '#C9932E', '#1E88E5', '#00897B'];
+
+        function filaActividadGanttHTML(a, color, atrasada) {
+            const fechaAct = new Date(a.fecha);
+            const fechaTexto = fechaAct.toLocaleDateString('es-CL', { weekday:'short', day:'numeric', month:'short' });
+            const horaTexto = fechaAct.toTimeString().substring(0,5);
+            return `<div style="display:flex; align-items:center; gap:10px; padding:8px 10px; margin-bottom:6px; border-radius:8px; background:${atrasada ? '#FFF3E0' : '#fafafa'}; border:1px solid ${atrasada ? '#F9A825' : '#eee'};">
+                <div onclick="toggleCompletada(${a.id})" style="width:18px;height:18px;border-radius:5px;border:2px solid ${color};flex-shrink:0;cursor:pointer;background:${a.completada ? color : 'transparent'};"></div>
+                <div style="flex:1;">
+                    <div style="font-size:0.85rem; font-weight:500; ${a.completada ? 'text-decoration:line-through;color:#aaa;' : ''}">${a.nombre}</div>
+                    <div style="font-size:0.72rem; color:${atrasada ? '#E65100' : '#888'};">${atrasada ? 'Atrasada · ' : ''}${fechaTexto} · ${horaTexto} · ${a.duracion}${a.unidad || 'h'}</div>
+                </div>
+            </div>`;
+        }
+
+        function agruparActividadesPorArea(lista) {
+            const porArea = {};
+            lista.forEach(a => { const area = a.area || 'Sin área'; (porArea[area] = porArea[area] || []).push(a); });
+            Object.values(porArea).forEach(l => l.sort((x,y) => new Date(x.fecha) - new Date(y.fecha)));
+            return porArea;
+        }
+
+        function renderizarGrupoAreasGantt(porArea, esAtrasadaFn) {
+            let html = '';
+            Object.keys(porArea).forEach((area, i) => {
+                const color = GANTT_COLORES[i % GANTT_COLORES.length];
+                html += `<div style="margin-bottom:1.1rem;"><div style="font-weight:700; color:${color}; font-size:0.9rem; margin-bottom:0.5rem; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:${color};display:inline-block;"></span>${area}</div>`;
+                porArea[area].forEach(a => html += filaActividadGanttHTML(a, color, esAtrasadaFn ? esAtrasadaFn(a) : false));
+                html += `</div>`;
+            });
+            return html;
+        }
+
+        function cambiarSubvistaGantt(v) {
+            ganttSubvista = v;
+            document.getElementById('ganttSubvistaCarta').style.display = v === 'carta' ? 'block' : 'none';
+            document.getElementById('ganttSubvistaHoy').style.display = v === 'hoy' ? 'block' : 'none';
+            document.getElementById('ganttSubvistaDia').style.display = v === 'dia' ? 'block' : 'none';
+            ['Carta','Hoy','Dia'].forEach(k => {
+                const btn = document.getElementById('ganttTab' + k);
+                const activo = k.toLowerCase() === v || (k === 'Dia' && v === 'dia');
+                btn.className = activo ? 'btn btn-small' : 'btn btn-secondary btn-small';
+                btn.style.background = activo ? 'var(--purple)' : '';
+                btn.style.color = activo ? '#fff' : '';
+            });
+            renderizarGantt();
+        }
+
+        function cambiarDiaGantt(delta) {
+            const d = new Date(ganttFechaRevision + 'T00:00:00');
+            d.setDate(d.getDate() + delta);
+            ganttFechaRevision = d.toISOString().split('T')[0];
+            renderizarGantt();
+        }
+        function irAHoyGantt() {
+            ganttFechaRevision = new Date().toISOString().split('T')[0];
+            renderizarGantt();
+        }
+
         function renderizarGantt() {
             const sel = document.getElementById('ganttProyectoSelect');
             if (!sel) return;
             const seleccionPrevia = sel.value;
             sel.innerHTML = appData.proyectos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            const contenedores = ['ganttContenido', 'ganttHoyContenido', 'ganttDiaContenido'];
             if (appData.proyectos.length === 0) {
-                document.getElementById('ganttContenido').innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Crea un proyecto primero en 🎯 Proyectos, luego agrégale actividades con un Área para verlas aquí como carta Gantt.</p>';
+                contenedores.forEach(id => document.getElementById(id).innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Crea un proyecto primero en 🎯 Proyectos, luego agrégale actividades con un Área para verlas aquí como carta Gantt.</p>');
                 return;
             }
             if (seleccionPrevia && appData.proyectos.some(p => p.id === parseInt(seleccionPrevia))) sel.value = seleccionPrevia;
             const proyectoId = parseInt(sel.value);
-
             const actsProyecto = appData.actividades.filter(a => a.proyectoId === proyectoId && a.fecha);
-            if (actsProyecto.length === 0) {
-                document.getElementById('ganttContenido').innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Este proyecto todavía no tiene actividades con fecha. Agrégalas desde 📋 Actividades, indicando el Área.</p>';
-                return;
+
+            if (ganttSubvista === 'carta') {
+                const cont = document.getElementById('ganttContenido');
+                if (actsProyecto.length === 0) { cont.innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Este proyecto todavía no tiene actividades con fecha. Agrégalas desde 📋 Actividades o con los botones de arriba.</p>'; return; }
+                const hoy = new Date(); hoy.setHours(0,0,0,0);
+                cont.innerHTML = renderizarGrupoAreasGantt(agruparActividadesPorArea(actsProyecto), a => { const f = new Date(a.fecha); f.setHours(0,0,0,0); return !a.completada && f < hoy; });
+
+            } else if (ganttSubvista === 'hoy') {
+                const cont = document.getElementById('ganttHoyContenido');
+                const hoy = new Date(); hoy.setHours(0,0,0,0);
+                const atrasadas = actsProyecto.filter(a => { const f = new Date(a.fecha); f.setHours(0,0,0,0); return f < hoy && !a.completada; });
+                const deHoy = actsProyecto.filter(a => { const f = new Date(a.fecha); f.setHours(0,0,0,0); return f.getTime() === hoy.getTime(); });
+                let html = '';
+                if (atrasadas.length) {
+                    html += `<div style="font-weight:700;color:#E65100;font-size:0.85rem;margin-bottom:0.5rem;">⚠️ ATRASADAS (${atrasadas.length})</div>`;
+                    html += renderizarGrupoAreasGantt(agruparActividadesPorArea(atrasadas), () => true);
+                }
+                html += `<div style="font-weight:700;color:var(--purple);font-size:0.85rem;margin:0.75rem 0 0.5rem;">HOY</div>`;
+                html += deHoy.length ? renderizarGrupoAreasGantt(agruparActividadesPorArea(deHoy), () => false) : '<p style="font-size:0.85rem;color:#aaa;">Sin actividades programadas para hoy en este proyecto.</p>';
+                cont.innerHTML = html;
+
+            } else {
+                const inputFecha = document.getElementById('ganttDiaFecha');
+                if (inputFecha) inputFecha.value = ganttFechaRevision;
+                const diaObjetivo = new Date(ganttFechaRevision + 'T00:00:00').toDateString();
+                const actsDia = actsProyecto.filter(a => new Date(a.fecha).toDateString() === diaObjetivo);
+                const cont = document.getElementById('ganttDiaContenido');
+                cont.innerHTML = actsDia.length ? renderizarGrupoAreasGantt(agruparActividadesPorArea(actsDia), () => false) : '<p style="font-size:0.85rem;color:#aaa;">Sin actividades este día en este proyecto.</p>';
             }
-
-            const hoy = new Date(); hoy.setHours(0,0,0,0);
-            const porArea = {};
-            actsProyecto.forEach(a => {
-                const area = a.area || 'Sin área';
-                (porArea[area] = porArea[area] || []).push(a);
-            });
-            Object.values(porArea).forEach(lista => lista.sort((x,y) => new Date(x.fecha) - new Date(y.fecha)));
-
-            const coloresArea = ['#4B168E', '#A0740F', '#7C4DBC', '#C9932E', '#1E88E5', '#00897B'];
-            let html = '';
-            Object.keys(porArea).forEach((area, i) => {
-                const color = coloresArea[i % coloresArea.length];
-                html += `<div style="margin-bottom:1.25rem;">
-                    <div style="font-weight:700; color:${color}; font-size:0.92rem; margin-bottom:0.5rem; display:flex; align-items:center; gap:6px;">
-                        <span style="width:10px;height:10px;border-radius:3px;background:${color};display:inline-block;"></span>${area}
-                    </div>`;
-                porArea[area].forEach(a => {
-                    const fechaAct = new Date(a.fecha);
-                    const fechaSolo = new Date(fechaAct); fechaSolo.setHours(0,0,0,0);
-                    const atrasada = !a.completada && fechaSolo < hoy;
-                    const fechaTexto = fechaAct.toLocaleDateString('es-CL', { weekday:'short', day:'numeric', month:'short' });
-                    const horaTexto = fechaAct.toTimeString().substring(0,5);
-                    html += `<div style="display:flex; align-items:center; gap:10px; padding:8px 10px; margin-bottom:6px; border-radius:8px; background:${atrasada ? '#FFF3E0' : '#fafafa'}; border:1px solid ${atrasada ? '#F9A825' : '#eee'};">
-                        <div onclick="toggleCompletada(${a.id})" style="width:18px;height:18px;border-radius:5px;border:2px solid ${color};flex-shrink:0;cursor:pointer;background:${a.completada ? color : 'transparent'};"></div>
-                        <div style="flex:1;">
-                            <div style="font-size:0.85rem; font-weight:500; ${a.completada ? 'text-decoration:line-through;color:#aaa;' : ''}">${a.nombre}</div>
-                            <div style="font-size:0.72rem; color:${atrasada ? '#E65100' : '#888'};">${atrasada ? 'Atrasada · ' : ''}${fechaTexto} · ${horaTexto} · ${a.duracion}${a.unidad || 'h'}</div>
-                        </div>
-                    </div>`;
-                });
-                html += `</div>`;
-            });
-            document.getElementById('ganttContenido').innerHTML = html;
         }
 
         function renderizarAgenda() {
