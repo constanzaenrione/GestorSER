@@ -1,4 +1,4 @@
-const CACHE = 'gestor-ser-v14';
+const CACHE = 'gestor-ser-v15';
 const ARCHIVOS = [
   '/GestorSER/',
   '/GestorSER/index.html',
@@ -21,6 +21,11 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Solo interceptar peticiones GET a archivos propios de la app.
+  // Todo lo demás (login, datos de Supabase, cualquier otro dominio) pasa directo a la red.
+  if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin)) {
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
       const clone = res.clone();
