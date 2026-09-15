@@ -874,6 +874,7 @@
                     </div>
                     <button type="button" class="btn btn-secondary btn-small" onclick="toggleImportadorGantt()">📥 Importar carta Gantt</button>
                     <button type="button" class="btn btn-secondary btn-small" onclick="toggleCargaRapida()">➕ Agregar paso a paso</button>
+                    <button type="button" class="btn btn-delete btn-small" onclick="eliminarCartaGanttProyecto()">🗑️ Eliminar carta Gantt</button>
                 </div>
 
                 <div style="display:flex; gap:0.4rem; margin-bottom:0.85rem; border-bottom:1px solid #eee; padding-bottom:0.6rem;">
@@ -917,6 +918,10 @@
                         <button type="button" class="btn btn-primary btn-small" onclick="importarGantt()">Importar</button>
                         <span id="ganttImportResultado" style="font-size:0.78rem; color:var(--green);"></span>
                     </div>
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#666; margin-top:0.6rem; cursor:pointer;">
+                        <input type="checkbox" id="ganttReemplazar" style="width:16px; height:16px; flex-shrink:0;">
+                        Reemplazar carta Gantt existente de este proyecto (borra las actividades con fecha que ya tenía, antes de importar las nuevas)
+                    </label>
                 </div>
 
                 <div id="ganttSubvistaCarta">
@@ -2268,6 +2273,31 @@
             guardarDatos();
             renderizarTodasActividades();
             renderizarAgenda();
+            renderizarGantt();
+        }
+
+        function eliminarAreaGantt(proyectoId, area) {
+            const acts = appData.actividades.filter(a => a.proyectoId === proyectoId && a.fecha && (a.area || 'Sin área') === area);
+            if (acts.length === 0) return;
+            if (!confirm(`¿Eliminar toda el área "${area}" de la carta Gantt? Se borrarán ${acts.length} actividad(es).`)) return;
+            const idsBorrar = new Set(acts.map(a => a.id));
+            appData.actividades = appData.actividades.filter(a => !idsBorrar.has(a.id));
+            guardarDatos();
+            renderizarTodo();
+        }
+
+        function eliminarCartaGanttProyecto() {
+            const sel = document.getElementById('ganttProyectoSelect');
+            if (!sel || !sel.value) { alert('Elige primero un proyecto.'); return; }
+            const proyectoId = parseInt(sel.value);
+            const proyecto = appData.proyectos.find(p => p.id === proyectoId);
+            const acts = appData.actividades.filter(a => a.proyectoId === proyectoId && a.fecha);
+            if (acts.length === 0) { alert('Este proyecto todavía no tiene actividades con fecha en su carta Gantt.'); return; }
+            if (!confirm(`¿Eliminar TODA la carta Gantt de "${proyecto?.nombre}"?\n\nSe borrarán ${acts.length} actividad(es) con fecha (incluye las que tengan y las que no tengan área asignada). Esta acción no se puede deshacer.`)) return;
+            const idsBorrar = new Set(acts.map(a => a.id));
+            appData.actividades = appData.actividades.filter(a => !idsBorrar.has(a.id));
+            guardarDatos();
+            renderizarTodo();
         }
 
         function guardarProyecto(e) {
@@ -3388,7 +3418,14 @@
                 appData.proyectos.push(proyecto);
             }
 
-            let creadas = 0, actualizadas = 0;
+            let creadas = 0, actualizadas = 0, eliminadasPrevias = 0;
+            const reemplazar = document.getElementById('ganttReemplazar')?.checked;
+            if (reemplazar) {
+                const aBorrar = appData.actividades.filter(a => a.proyectoId === proyecto.id && a.fecha);
+                eliminadasPrevias = aBorrar.length;
+                const idsBorrar = new Set(aBorrar.map(a => a.id));
+                appData.actividades = appData.actividades.filter(a => !idsBorrar.has(a.id));
+            }
             payload.actividades.forEach((item, i) => {
                 const ganttKey = proyecto.id + '|' + (item.area || '') + '|' + item.nombre + '|' + item.fecha;
                 const existente = appData.actividades.find(a => a.ganttKey === ganttKey);
@@ -3430,7 +3467,11 @@
             if (selGantt) selGantt.value = proyecto.id;
             renderizarGantt();
             resultado.style.color = 'var(--green)';
-            resultado.textContent = `✓ Listo: ${creadas} actividades nuevas, ${actualizadas} actualizadas en "${proyecto.nombre}".`;
+            resultado.textContent = eliminadasPrevias > 0
+                ? `✓ Listo: se reemplazó la carta Gantt (${eliminadasPrevias} actividades anteriores eliminadas), ${creadas} nuevas cargadas en "${proyecto.nombre}".`
+                : `✓ Listo: ${creadas} actividades nuevas, ${actualizadas} actualizadas en "${proyecto.nombre}".`;
+            const chkReemplazar = document.getElementById('ganttReemplazar');
+            if (chkReemplazar) chkReemplazar.checked = false;
         }
 
         let ganttSubvista = 'carta';
@@ -3443,10 +3484,11 @@
             const horaTexto = fechaAct.toTimeString().substring(0,5);
             return `<div style="display:flex; align-items:center; gap:10px; padding:8px 10px; margin-bottom:6px; border-radius:8px; background:${atrasada ? '#FFF3E0' : '#fafafa'}; border:1px solid ${atrasada ? '#F9A825' : '#eee'};">
                 <div onclick="toggleCompletada(${a.id})" style="width:18px;height:18px;border-radius:5px;border:2px solid ${color};flex-shrink:0;cursor:pointer;background:${a.completada ? color : 'transparent'};"></div>
-                <div style="flex:1;">
+                <div style="flex:1; min-width:0; cursor:pointer;" onclick="abrirModalActividad(${a.id})" title="Editar esta actividad">
                     <div style="font-size:0.85rem; font-weight:500; ${a.completada ? 'text-decoration:line-through;color:#aaa;' : ''}">${a.nombre}</div>
                     <div style="font-size:0.72rem; color:${atrasada ? '#E65100' : '#888'};">${atrasada ? 'Atrasada · ' : ''}${fechaTexto} · ${horaTexto} · ${a.duracion}${a.unidad || 'h'}</div>
                 </div>
+                <button type="button" title="Eliminar esta actividad" onclick="eliminarActividad(${a.id})" style="border:none; background:none; color:#c62828; font-size:0.95rem; cursor:pointer; flex-shrink:0; padding:4px;">✕</button>
             </div>`;
         }
 
@@ -3508,7 +3550,7 @@
             return out;
         }
 
-        function renderizarGanttBarras(actsProyecto) {
+        function renderizarGanttBarras(actsProyecto, proyectoId) {
             const cont = document.getElementById('ganttContenido');
             if (actsProyecto.length === 0) { cont.innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Este proyecto todavía no tiene actividades con fecha. Agrégalas desde 📋 Actividades o con los botones de arriba.</p>'; return; }
 
@@ -3531,9 +3573,15 @@
                 const color = GANTT_COLORES[ai % GANTT_COLORES.length];
                 const key = 'area_' + ai;
                 const abierto = ganttAreasAbiertas.has(key);
+                const areaJson = JSON.stringify(area).replace(/"/g, '&quot;');
 
                 dias.forEach((f, i) => { html += `<div class="ganttbar-cell" style="grid-row:${r};grid-column:${i+2};"></div>`; });
-                html += `<div class="ganttbar-arealabel" style="grid-row:${r};grid-column:1;color:${color};" onclick="toggleAreaGanttBarras('${key}')"><span class="ganttbar-chevron ${abierto?'open':''}">▸</span>${area}</div>`;
+                html += `<div class="ganttbar-arealabel" style="grid-row:${r};grid-column:1;color:${color};">
+                    <span onclick="toggleAreaGanttBarras('${key}')" style="cursor:pointer; display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">
+                        <span class="ganttbar-chevron ${abierto?'open':''}">▸</span><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${area}</span>
+                    </span>
+                    <button type="button" title="Eliminar esta área completa" onclick="eliminarAreaGantt(${proyectoId}, JSON.parse(this.dataset.area))" data-area="${areaJson}" style="border:none; background:none; color:#c62828; font-size:0.85rem; cursor:pointer; flex-shrink:0; padding:2px 4px;">🗑️</button>
+                </div>`;
                 dias.forEach((f, i) => {
                     const actsDia = porArea[area].filter(a => a.fecha.split('T')[0] === f);
                     if (actsDia.length === 0) return;
@@ -3549,10 +3597,13 @@
                         const f = a.fecha.split('T')[0];
                         const idx = dias.indexOf(f);
                         dias.forEach((fx, i) => { html += `<div class="ganttbar-cell" style="grid-row:${r};grid-column:${i+2};"></div>`; });
-                        html += `<div class="ganttbar-actlabel" style="grid-row:${r};grid-column:1;">${a.nombre}</div>`;
+                        html += `<div class="ganttbar-actlabel" style="grid-row:${r};grid-column:1; display:flex; align-items:center; gap:4px;">
+                            <span onclick="abrirModalActividad(${a.id})" title="Editar esta actividad" style="cursor:pointer; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${a.nombre}</span>
+                            <button type="button" title="Eliminar esta actividad" onclick="eliminarActividad(${a.id})" style="border:none; background:none; color:#c62828; font-size:0.8rem; cursor:pointer; flex-shrink:0; padding:2px 4px;">✕</button>
+                        </div>`;
                         if (idx >= 0) {
                             const opacity = a.completada ? 1 : 0.35;
-                            html += `<div class="ganttbar-bar" onclick="toggleCompletada(${a.id})" style="grid-row:${r};grid-column:${idx+2};background:${color};opacity:${opacity};cursor:pointer;"></div>`;
+                            html += `<div class="ganttbar-bar" onclick="toggleCompletada(${a.id})" title="Tocar para marcar completada" style="grid-row:${r};grid-column:${idx+2};background:${color};opacity:${opacity};cursor:pointer;"></div>`;
                         }
                         r++;
                     });
@@ -3577,7 +3628,7 @@
             const actsProyecto = appData.actividades.filter(a => a.proyectoId === proyectoId && a.fecha);
 
             if (ganttSubvista === 'carta') {
-                renderizarGanttBarras(actsProyecto);
+                renderizarGanttBarras(actsProyecto, proyectoId);
 
             } else if (ganttSubvista === 'hoy') {
                 const cont = document.getElementById('ganttHoyContenido');
