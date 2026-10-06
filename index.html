@@ -705,6 +705,61 @@
         .ganttbar-bar{ align-self:center; height:14px; border-radius:4px; margin:2px 1px; }
         .ganttbar-chevron{ font-size:9px; display:inline-block; transition:transform .15s; }
         .ganttbar-chevron.open{ transform:rotate(90deg); }
+
+        /* Carta Gantt · Mapa, Plan diario, Condiciones y Decisiones */
+        .gx-tabs{ display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.85rem; border-bottom:1px solid #eee; padding-bottom:0.6rem; }
+        .gx-chip{ display:inline-block; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:20px; line-height:1.5; }
+        .gx-chips{ display:flex; gap:4px; flex-wrap:wrap; }
+        .gx-lbl{ display:block; font-size:0.66rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#8a8a8a; margin:0 0 2px; }
+        .gx-mini{ font-size:0.74rem; color:#777; }
+        .gx-linea{ font-size:0.84rem; color:#333; margin-top:0.55rem; line-height:1.45; }
+        .gx-linea ul, .gx-nohacer ul, .gx-tabla ul{ margin:0.1rem 0 0 1.05rem; }
+        .gx-linea li, .gx-nohacer li{ margin-bottom:1px; }
+        .gx-nota{ font-size:0.76rem; color:#7A5C00; background:#FFF8E1; border-radius:6px; padding:4px 8px; margin-top:0.45rem; }
+        .gx-intro{ font-size:0.82rem; color:#555; line-height:1.5; margin-bottom:0.8rem; }
+        .gx-titulo{ font-weight:700; color:var(--purple); font-size:0.9rem; margin-top:1.4rem; }
+        .gx-resumen{ background:var(--lavender-light); border-radius:12px; padding:0.9rem 1rem; margin-bottom:1rem; }
+        .gx-paso{ font-size:1.05rem; font-weight:700; color:var(--purple); }
+        .gx-paso-nombre{ font-size:0.88rem; color:#333; margin-top:1px; }
+        .gx-barra{ height:8px; border-radius:6px; background:#e4dcf1; overflow:hidden; }
+        .gx-barra > span{ display:block; height:100%; border-radius:6px; }
+        .gx-etapa{ border:1px solid #eee; border-left:5px solid #888; border-radius:10px; padding:0.8rem 0.9rem; margin-bottom:0.7rem; background:#fff; }
+        .gx-etapa-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; }
+        .gx-etapa h4{ font-size:0.95rem; }
+        .gx-nohacer{ background:#FFF5F5; border:1px dashed #E3A5A5; border-radius:8px; padding:0.5rem 0.7rem; margin-top:0.6rem; font-size:0.82rem; color:#444; }
+        .gx-nohacer .gx-lbl{ color:#B23B3B; }
+        .gx-acciones{ display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.7rem; align-items:center; }
+        .gx-link{ border:none; background:none; color:var(--purple); font-size:0.8rem; cursor:pointer; padding:2px 4px; font-family:inherit; }
+        .gx-form{ border:1px solid #e0d4f7; border-radius:10px; padding:0.8rem; margin:0.6rem 0 1rem; background:#faf8fd; }
+        .gx-form .gx-lbl{ margin-top:0.6rem; }
+        .gx-form .gx-lbl:first-child{ margin-top:0; }
+        .gx-dia{ background:var(--lavender-light); border-radius:10px; padding:0.75rem 0.9rem; margin-bottom:0.9rem; }
+        .gx-dia-top{ display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; font-size:0.92rem; color:var(--purple); }
+        .gx-cierre{ border:1px solid #e0d4f7; border-radius:10px; padding:0.65rem 0.85rem; margin-top:0.9rem; background:#faf8fd; }
+        .gx-cierre summary{ cursor:pointer; font-weight:700; color:var(--purple); font-size:0.88rem; }
+        .gx-cierre .gx-lbl{ margin-top:0.65rem; }
+        .gx-semana{ border:1px solid #eee; border-radius:10px; margin-bottom:0.5rem; background:#fff; }
+        .gx-semana > summary{ cursor:pointer; padding:0.6rem 0.8rem; font-weight:700; font-size:0.85rem; color:#333; }
+        .gx-sugeridas{ border:1px dashed #d9cdef; border-radius:10px; padding:0.6rem 0.8rem; margin-bottom:0.9rem; font-size:0.8rem; }
+        .gx-sug{ display:flex; justify-content:space-between; gap:8px; align-items:flex-start; padding:5px 0; border-top:1px solid #f0ebf8; }
+        .gx-tabla{ width:100%; border-collapse:collapse; font-size:0.8rem; line-height:1.4; }
+        .gx-tabla th{ text-align:left; font-size:0.66rem; letter-spacing:.05em; text-transform:uppercase; color:#8a8a8a; padding:6px 8px; border-bottom:2px solid #e9e3f3; white-space:nowrap; }
+        .gx-tabla td{ vertical-align:top; padding:8px; border-bottom:1px solid #f1f1f1; color:#333; }
+        .gx-tabla ol{ margin:0 0 0 1.1rem; }
+        .gx-semana .gx-tabla tbody tr{ cursor:pointer; }
+        .gx-semana .gx-tabla tbody tr:hover{ background:#faf8fd; }
+        .gx-fila-sel{ background:#F3EEFB; }
+        .gx-hecha{ text-decoration:line-through; color:#aaa; }
+        .gx-td-nohacer{ color:#8a4b4b; font-size:0.76rem; }
+        @media (max-width: 820px){
+            .gx-tabla thead{ display:none; }
+            .gx-tabla, .gx-tabla tbody{ display:block; }
+            .gx-tabla tr{ display:block; border:1px solid #eee; border-radius:10px; margin:0 0 0.6rem; padding:0.55rem 0.75rem; background:#fff; }
+            .gx-semana .gx-tabla tr{ margin:0 0.6rem 0.6rem; }
+            .gx-tabla td{ display:block; border:none; padding:3px 0; }
+            .gx-tabla td[data-l]::before{ content:attr(data-l); display:block; font-size:0.62rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#9a9a9a; margin-top:4px; }
+            .gx-tabla td.gx-td-fecha, .gx-tabla td.gx-td-dia{ display:inline-block; margin-right:6px; font-size:0.9rem; }
+        }
     </style>
 </head>
 <body>
@@ -878,10 +933,13 @@
                     <button type="button" class="btn btn-delete btn-small" onclick="eliminarCartaGanttProyecto()">🗑️ Eliminar carta Gantt</button>
                 </div>
 
-                <div style="display:flex; gap:0.4rem; margin-bottom:0.85rem; border-bottom:1px solid #eee; padding-bottom:0.6rem;">
+                <div class="gx-tabs">
+                    <button type="button" id="ganttTabMapa" class="btn btn-secondary btn-small" onclick="cambiarSubvistaGantt('mapa')">🗺️ Mapa</button>
                     <button type="button" id="ganttTabCarta" class="btn btn-small" onclick="cambiarSubvistaGantt('carta')" style="background:var(--purple); color:#fff;">📊 Carta Gantt</button>
                     <button type="button" id="ganttTabHoy" class="btn btn-secondary btn-small" onclick="cambiarSubvistaGantt('hoy')">☀️ Hoy</button>
-                    <button type="button" id="ganttTabDia" class="btn btn-secondary btn-small" onclick="cambiarSubvistaGantt('dia')">📅 Revisar día</button>
+                    <button type="button" id="ganttTabDia" class="btn btn-secondary btn-small" onclick="cambiarSubvistaGantt('dia')">📋 Plan diario</button>
+                    <button type="button" id="ganttTabCond" class="btn btn-secondary btn-small" onclick="cambiarSubvistaGantt('cond')">🧩 Condiciones</button>
+                    <button type="button" id="ganttTabDec" class="btn btn-secondary btn-small" onclick="cambiarSubvistaGantt('dec')">💡 Decisiones</button>
                 </div>
 
                 <div id="cargaRapidaGantt" style="display:none; border:1px solid #e0d4f7; border-radius:10px; padding:0.85rem; margin-bottom:1rem; background:#faf8fd;">
@@ -925,6 +983,10 @@
                     </label>
                 </div>
 
+                <div id="ganttSubvistaMapa" style="display:none;">
+                    <div id="ganttMapaContenido"></div>
+                </div>
+
                 <div id="ganttSubvistaCarta">
                     <div id="ganttContenido"></div>
                 </div>
@@ -941,6 +1003,15 @@
                         <button type="button" class="btn btn-secondary btn-small" onclick="irAHoyGantt()">Hoy</button>
                     </div>
                     <div id="ganttDiaContenido"></div>
+                    <div id="ganttPlanDiarioLista"></div>
+                </div>
+
+                <div id="ganttSubvistaCond" style="display:none;">
+                    <div id="ganttCondContenido"></div>
+                </div>
+
+                <div id="ganttSubvistaDec" style="display:none;">
+                    <div id="ganttDecContenido"></div>
                 </div>
             </div>
         </div>
@@ -2306,6 +2377,9 @@
             if (!confirm(msg)) return;
             appData.proyectos = appData.proyectos.filter(p => p.id !== id);
             if (tieneActividades) appData.actividades = appData.actividades.filter(a => a.proyectoId !== id);
+            if (appData.ganttPlan) delete appData.ganttPlan[id];
+            if (appData.ganttCondiciones) appData.ganttCondiciones = appData.ganttCondiciones.filter(c => c.proyectoId !== id);
+            if (appData.ganttDecisiones) appData.ganttDecisiones = appData.ganttDecisiones.filter(d => d.proyectoId !== id);
             guardarDatos();
             renderizarProyectos();
             renderizarTodasActividades();
@@ -3490,19 +3564,57 @@
                 };
                 appData.proyectos.push(proyecto);
             }
+            // Meta SMART y fecha límite: solo se completa lo que esté vacío (no pisa lo que ya escribiste)
+            if (payload.proyecto.smart && typeof payload.proyecto.smart === 'object') {
+                if (!proyecto.smart) proyecto.smart = { especifica: '', medible: '', alcanzable: '', relevante: '', tiempo: '' };
+                ['especifica', 'medible', 'alcanzable', 'relevante', 'tiempo'].forEach(k => {
+                    if (!proyecto.smart[k] && payload.proyecto.smart[k]) proyecto.smart[k] = String(payload.proyecto.smart[k]);
+                });
+            }
+            if (!proyecto.fechaLimite && payload.proyecto.fechaLimite) proyecto.fechaLimite = payload.proyecto.fechaLimite;
 
             let creadas = 0, actualizadas = 0, eliminadasPrevias = 0;
             const reemplazar = document.getElementById('ganttReemplazar')?.checked;
+            const claveBase = a => (a.area || '') + '|' + a.nombre;
+            // Al reemplazar se conserva lo que ya hiciste: cada actividad nueva hereda el avance
+            // y las notas de la actividad anterior con la misma área y nombre (en orden de fecha).
+            const previasPorClave = {};
             if (reemplazar) {
                 const aBorrar = appData.actividades.filter(a => a.proyectoId === proyecto.id && a.fecha);
                 eliminadasPrevias = aBorrar.length;
+                aBorrar.slice().sort((x, y) => new Date(x.fecha) - new Date(y.fecha)).forEach(a => {
+                    (previasPorClave[claveBase(a)] = previasPorClave[claveBase(a)] || []).push(a);
+                });
                 const idsBorrar = new Set(aBorrar.map(a => a.id));
                 appData.actividades = appData.actividades.filter(a => !idsBorrar.has(a.id));
             }
-            payload.actividades.forEach((item, i) => {
+            const CAMPOS_PROPIOS = ['completada', 'fechaCompletada', 'completadaTarde', 'diasAtraso', 'limitacion', 'necesito', 'creencia', 'subtareas', 'ritualId', 'color', 'prioridad', 'tipo'];
+            const items = payload.actividades.map((item, i) => ({ item, i })).filter(x => x.item && x.item.nombre && x.item.fecha);
+            const heredado = new Map();
+            items.slice().sort((x, y) => new Date(x.item.fecha) - new Date(y.item.fecha)).forEach(x => {
+                const cola = previasPorClave[claveBase(x.item)];
+                if (cola && cola.length) heredado.set(x.i, cola.shift());
+            });
+            let siguienteId = appData.actividades.reduce((m, a) => Math.max(m, Number(a.id) || 0), Date.now()) + 1;
+            let conservadas = 0;
+            items.forEach(({ item, i }) => {
                 const ganttKey = proyecto.id + '|' + (item.area || '') + '|' + item.nombre + '|' + item.fecha;
                 const existente = appData.actividades.find(a => a.ganttKey === ganttKey);
-                const base = {
+                if (existente) {
+                    // Solo se actualiza lo que viene en el archivo; tu avance y tus notas quedan intactos
+                    Object.assign(existente, {
+                        proyectoId: proyecto.id, area: item.area || '', nombre: item.nombre,
+                        fecha: item.fecha, duracion: item.duracion, unidad: item.unidad || 'min', ganttKey
+                    });
+                    actualizadas++;
+                    return;
+                }
+                const nueva = {
+                    id: siguienteId++,
+                    completada: false,
+                    origenPlanificador: false,
+                    color: null,
+                    creado: new Date().toISOString(),
                     proyectoId: proyecto.id,
                     area: item.area || '',
                     nombre: item.nombre,
@@ -3518,38 +3630,91 @@
                     subtareas: [],
                     ganttKey
                 };
-                if (existente) {
-                    Object.assign(existente, base);
-                    actualizadas++;
-                } else {
-                    appData.actividades.push({
-                        id: Date.now() + i,
-                        completada: false,
-                        origenPlanificador: false,
-                        color: null,
-                        creado: new Date().toISOString(),
-                        ...base
-                    });
-                    creadas++;
+                const previa = heredado.get(i);
+                if (previa) {
+                    CAMPOS_PROPIOS.forEach(k => { if (previa[k] !== undefined) nueva[k] = previa[k]; });
+                    conservadas++;
                 }
+                appData.actividades.push(nueva);
+                creadas++;
             });
+
+            // Mapa del proyecto, plan diario y registros que vengan en el archivo
+            let etapasImportadas = 0;
+            const traePlan = Array.isArray(payload.etapas) || Array.isArray(payload.dias) || payload.proyecto.ritmo || payload.niveles;
+            if (traePlan) {
+                const plan = ganttPlanDe(proyecto.id, true);
+                if (payload.proyecto.ritmo) plan.ritmo = String(payload.proyecto.ritmo);
+                if (payload.niveles && typeof payload.niveles === 'object') plan.niveles = payload.niveles;
+                if (Array.isArray(payload.etapas)) {
+                    const previas = plan.etapas;
+                    plan.etapas = payload.etapas.filter(e => e && e.area).map(e => ({
+                        area: String(e.area),
+                        resultado: e.resultado || '',
+                        entregables: listaG(e.entregables),
+                        duracion: e.duracion || '',
+                        hito: e.hito || '',
+                        noHacer: listaG(e.noHacer),
+                        nivel: e.nivel || '',
+                        nota: e.nota || '',
+                        transversal: !!e.transversal
+                    }));
+                    previas.forEach(p => { if (!plan.etapas.some(e => e.area === p.area)) plan.etapas.push(p); });
+                    etapasImportadas = payload.etapas.length;
+                }
+                if (Array.isArray(payload.dias)) {
+                    payload.dias.forEach(d => {
+                        if (!d || !d.fecha) return;
+                        const dia = plan.dias[d.fecha] || (plan.dias[d.fecha] = {});
+                        // Solo lo planificado; lo que tú registraste en el cierre del día no se toca
+                        dia.resultado = d.resultado || '';
+                        dia.nota = d.nota || '';
+                        if (d.noHacer) dia.noHacer = listaG(d.noHacer); else delete dia.noHacer;
+                    });
+                }
+            }
+            if (Array.isArray(payload.decisiones)) {
+                if (!appData.ganttDecisiones) appData.ganttDecisiones = [];
+                payload.decisiones.forEach(d => {
+                    if (!d || !d.texto) return;
+                    if (appData.ganttDecisiones.some(x => x.proyectoId === proyecto.id && x.texto === d.texto)) return;
+                    appData.ganttDecisiones.push({
+                        id: siguienteId++, proyectoId: proyecto.id, fecha: d.fecha || '',
+                        tipo: d.tipo === 'aprendizaje' ? 'aprendizaje' : 'decision',
+                        texto: d.texto, evidencia: d.evidencia || '', revisar: d.revisar || ''
+                    });
+                });
+            }
+            if (Array.isArray(payload.condiciones)) {
+                if (!appData.ganttCondiciones) appData.ganttCondiciones = [];
+                payload.condiciones.forEach(c => {
+                    if (!c || !c.accion) return;
+                    if (appData.ganttCondiciones.some(x => x.proyectoId === proyecto.id && x.accion === c.accion && x.ocurrio === (c.ocurrio || ''))) return;
+                    appData.ganttCondiciones.push({
+                        id: siguienteId++, proyectoId: proyecto.id, fecha: c.fecha || '',
+                        accion: c.accion, ocurrio: c.ocurrio || '', dificulto: c.dificulto || '', necesito: c.necesito || '',
+                        ajuste: c.ajuste || '', fechaPrueba: c.fechaPrueba || '', resultado: c.resultado || ''
+                    });
+                });
+            }
 
             guardarDatos();
             renderizarTodo();
             const selGantt = document.getElementById('ganttProyectoSelect');
             if (selGantt) selGantt.value = proyecto.id;
-            renderizarGantt();
+            if (etapasImportadas) cambiarSubvistaGantt('mapa'); else renderizarGantt();
             resultado.style.color = 'var(--green)';
-            resultado.textContent = eliminadasPrevias > 0
-                ? `✓ Listo: se reemplazó la carta Gantt (${eliminadasPrevias} actividades anteriores eliminadas), ${creadas} nuevas cargadas en "${proyecto.nombre}".`
-                : `✓ Listo: ${creadas} actividades nuevas, ${actualizadas} actualizadas en "${proyecto.nombre}".`;
+            const extra = (etapasImportadas ? ` Mapa del proyecto: ${etapasImportadas} etapas.` : '') + (conservadas ? ` Se conservó el avance de ${conservadas}.` : '');
+            resultado.textContent = (eliminadasPrevias > 0
+                ? `✓ Listo: se reemplazó la carta Gantt (${eliminadasPrevias} actividades anteriores), ${creadas} cargadas en "${proyecto.nombre}".`
+                : `✓ Listo: ${creadas} actividades nuevas, ${actualizadas} actualizadas en "${proyecto.nombre}".`) + extra;
             const chkReemplazar = document.getElementById('ganttReemplazar');
             if (chkReemplazar) chkReemplazar.checked = false;
         }
 
         let ganttSubvista = 'carta';
         let ganttFechaRevision = hoyLocal();
-        const GANTT_COLORES = ['#4B168E', '#A0740F', '#7C4DBC', '#C9932E', '#1E88E5', '#00897B'];
+        const GANTT_COLORES = ['#4B168E', '#A0740F', '#7C4DBC', '#C9932E', '#1E88E5', '#00897B', '#AD1457', '#5E35B1', '#6D4C41', '#2E7D32', '#546E7A'];
 
         function filaActividadGanttHTML(a, color, atrasada) {
             const fechaAct = new Date(a.fecha);
@@ -3575,27 +3740,12 @@
         function renderizarGrupoAreasGantt(porArea, esAtrasadaFn) {
             let html = '';
             Object.keys(porArea).forEach((area, i) => {
-                const color = GANTT_COLORES[i % GANTT_COLORES.length];
+                const color = ganttColorPorArea[area] || GANTT_COLORES[i % GANTT_COLORES.length];
                 html += `<div style="margin-bottom:1.1rem;"><div style="font-weight:700; color:${color}; font-size:0.9rem; margin-bottom:0.5rem; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:${color};display:inline-block;"></span>${area}</div>`;
                 porArea[area].forEach(a => html += filaActividadGanttHTML(a, color, esAtrasadaFn ? esAtrasadaFn(a) : false));
                 html += `</div>`;
             });
             return html;
-        }
-
-        function cambiarSubvistaGantt(v) {
-            ganttSubvista = v;
-            document.getElementById('ganttSubvistaCarta').style.display = v === 'carta' ? 'block' : 'none';
-            document.getElementById('ganttSubvistaHoy').style.display = v === 'hoy' ? 'block' : 'none';
-            document.getElementById('ganttSubvistaDia').style.display = v === 'dia' ? 'block' : 'none';
-            ['Carta','Hoy','Dia'].forEach(k => {
-                const btn = document.getElementById('ganttTab' + k);
-                const activo = k.toLowerCase() === v || (k === 'Dia' && v === 'dia');
-                btn.className = activo ? 'btn btn-small' : 'btn btn-secondary btn-small';
-                btn.style.background = activo ? 'var(--purple)' : '';
-                btn.style.color = activo ? '#fff' : '';
-            });
-            renderizarGantt();
         }
 
         function cambiarDiaGantt(delta) {
@@ -3632,7 +3782,7 @@
             const maxF = fechas.reduce((a,b) => a > b ? a : b);
             const dias = fechasEntreGantt(minF, maxF);
             const porArea = agruparActividadesPorArea(actsProyecto);
-            const areasOrdenadas = Object.keys(porArea);
+            const areasOrdenadas = ordenAreasGantt(proyectoId, Object.keys(porArea));
 
             let html = `<div class="ganttbar-scroll"><div class="ganttbar-grid" style="grid-template-columns:190px repeat(${dias.length}, 26px);">`;
             html += `<div class="ganttbar-cell ganttbar-label-head" style="grid-row:1;grid-column:1;"></div>`;
@@ -3686,35 +3836,692 @@
             cont.innerHTML = html;
         }
 
+        // ============ CARTA GANTT · MAPA, PLAN DIARIO, CONDICIONES Y DECISIONES ============
+        // Datos nuevos (todos opcionales, viven junto al resto en appData):
+        //   appData.ganttPlan[proyectoId] = { ritmo, niveles, etapas:[{area,resultado,entregables,duracion,hito,noHacer,nivel,nota,transversal}], dias:{ 'AAAA-MM-DD': {resultado,nota,noHacer,estado,avance,costo,descubri,necesito} } }
+        //   appData.ganttCondiciones = [{id,proyectoId,fecha,accion,ocurrio,dificulto,necesito,ajuste,fechaPrueba,resultado}]
+        //   appData.ganttDecisiones  = [{id,proyectoId,fecha,tipo,texto,evidencia,revisar}]
+        const GANTT_VISTAS = ['mapa', 'carta', 'hoy', 'dia', 'cond', 'dec'];
+        const GANTT_NIVELES = {
+            compromiso: { txt: 'Compromiso', bg: '#EEE8F7', fg: '#4B168E' },
+            meta: { txt: 'Meta', bg: '#FFF4D6', fg: '#7A5C00' },
+            ritmo: { txt: 'Si el ritmo lo permite', bg: '#E3F2FD', fg: '#1558A6' }
+        };
+        const GANTT_ESTADOS_ETAPA = {
+            sin: { txt: 'Sin actividades', bg: '#f1f1f1', fg: '#777' },
+            pendiente: { txt: '⬜ Pendiente', bg: '#f1f1f1', fg: '#555' },
+            curso: { txt: '🟡 En curso', bg: '#FFF4D6', fg: '#7A5C00' },
+            ajustar: { txt: '🔵 Por ajustar', bg: '#E3F2FD', fg: '#1558A6' },
+            completada: { txt: '🟢 Completada', bg: '#E6F4EA', fg: '#1E6B34' }
+        };
+        const GANTT_ESTADOS_DIA = {
+            pendiente: '⬜ Pendiente',
+            proceso: '🟡 En proceso',
+            completado: '🟢 Completado',
+            reprogramado: '🔵 Reprogramado',
+            revisar: '🟣 Para revisar en sesión'
+        };
+        const GANTT_DIAS_SEM = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+        let ganttColorPorArea = {};
+        let ganttStatsActuales = [];
+        let ganttEtapaEditando = null;
+        let ganttCondEditando = null, ganttCondBorrador = null;
+        let ganttDecEditando = null;
+        let ganttCierresEstado = {};
+        let ganttSemanasToggle = {};
+
+        function escG(s) {
+            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function listaG(v) {
+            if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
+            if (typeof v === 'string') return v.split('\n').map(x => x.trim()).filter(Boolean);
+            return [];
+        }
+        function fechaCortaG(f) {
+            if (!f) return '';
+            const p = f.split('-');
+            return p.length === 3 ? p[2] + '/' + p[1] : f;
+        }
+        function fechaLargaG(f) {
+            const d = new Date(f + 'T00:00:00');
+            const t = d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
+            return t.charAt(0).toUpperCase() + t.slice(1);
+        }
+        function ganttPlanDe(proyectoId, crear) {
+            if (!appData.ganttPlan) {
+                if (!crear) return { ritmo: '', etapas: [], dias: {} };
+                appData.ganttPlan = {};
+            }
+            let p = appData.ganttPlan[proyectoId];
+            if (!p) {
+                p = { ritmo: '', etapas: [], dias: {} };
+                if (crear) appData.ganttPlan[proyectoId] = p;
+            }
+            if (!Array.isArray(p.etapas)) p.etapas = [];
+            if (!p.dias || typeof p.dias !== 'object') p.dias = {};
+            return p;
+        }
+        function ganttProyectoActualId() {
+            const sel = document.getElementById('ganttProyectoSelect');
+            return sel && sel.value ? parseInt(sel.value) : null;
+        }
+        function ordenAreasGantt(proyectoId, areasPresentes) {
+            const orden = ganttPlanDe(proyectoId).etapas.map(e => e.area);
+            return orden.filter(a => areasPresentes.includes(a)).concat(areasPresentes.filter(a => !orden.includes(a)));
+        }
+        function prepararColoresGantt(proyectoId, actsProyecto) {
+            const presentes = Object.keys(agruparActividadesPorArea(actsProyecto));
+            ganttColorPorArea = {};
+            ordenAreasGantt(proyectoId, presentes).forEach((a, i) => { ganttColorPorArea[a] = GANTT_COLORES[i % GANTT_COLORES.length]; });
+        }
+        function chipG(txt, bg, fg) {
+            return `<span class="gx-chip" style="background:${bg};color:${fg};">${escG(txt)}</span>`;
+        }
+
+        function cambiarSubvistaGantt(v) {
+            ganttSubvista = v;
+            GANTT_VISTAS.forEach(k => {
+                const K = k.charAt(0).toUpperCase() + k.slice(1);
+                const cont = document.getElementById('ganttSubvista' + K);
+                if (cont) cont.style.display = k === v ? 'block' : 'none';
+                const btn = document.getElementById('ganttTab' + K);
+                if (!btn) return;
+                const activo = k === v;
+                btn.className = activo ? 'btn btn-small' : 'btn btn-secondary btn-small';
+                btn.style.background = activo ? 'var(--purple)' : '';
+                btn.style.color = activo ? '#fff' : '';
+            });
+            renderizarGantt();
+        }
+
+        // ---------- Vista 1 · Mapa del proyecto ----------
+        function statsEtapasGantt(proyectoId, actsProyecto) {
+            const plan = ganttPlanDe(proyectoId);
+            const porArea = agruparActividadesPorArea(actsProyecto);
+            const presentes = Object.keys(porArea);
+            const nombres = plan.etapas.map(e => e.area).concat(presentes.filter(a => !plan.etapas.some(e => e.area === a)));
+            const hoy = hoyLocal();
+            return nombres.map(area => {
+                const meta = plan.etapas.find(e => e.area === area) || null;
+                const lista = porArea[area] || [];
+                const hechas = lista.filter(a => a.completada).length;
+                const fechas = lista.map(a => a.fecha.split('T')[0]).sort();
+                const inicio = fechas[0] || '', fin = fechas[fechas.length - 1] || '';
+                const pct = lista.length ? Math.round(hechas / lista.length * 100) : 0;
+                let estado;
+                if (!lista.length) estado = 'sin';
+                else if (hechas === lista.length) estado = 'completada';
+                else if (hoy > fin) estado = 'ajustar';
+                else if (hoy < inicio && hechas === 0) estado = 'pendiente';
+                else estado = 'curso';
+                return { area, meta, total: lista.length, hechas, pct, inicio, fin, estado, transversal: !!(meta && meta.transversal), color: ganttColorPorArea[area] || '#888' };
+            });
+        }
+        function pasoActualGantt(stats) {
+            const pasos = stats.filter(s => !s.transversal && s.total > 0);
+            if (!pasos.length) return null;
+            let idx = -1;
+            pasos.forEach((s, i) => { if (s.hechas > 0) idx = i; });
+            if (idx === -1) idx = 0;
+            else if (pasos[idx].pct === 100 && idx < pasos.length - 1) idx++;
+            return { n: idx + 1, de: pasos.length, etapa: pasos[idx], completo: pasos.every(s => s.pct === 100) };
+        }
+
+        function renderizarGanttMapa(proyectoId, actsProyecto) {
+            const cont = document.getElementById('ganttMapaContenido');
+            const proyecto = appData.proyectos.find(p => p.id === proyectoId);
+            const plan = ganttPlanDe(proyectoId);
+            const stats = statsEtapasGantt(proyectoId, actsProyecto);
+            ganttStatsActuales = stats;
+            if (!stats.length) {
+                cont.innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Este proyecto todavía no tiene etapas. Importa una carta Gantt o agrega actividades con un Área, y aquí verás su mapa.</p>';
+                return;
+            }
+            const paso = pasoActualGantt(stats);
+            const propias = stats.filter(s => !s.transversal);
+            const total = propias.reduce((n, s) => n + s.total, 0);
+            const hechas = propias.reduce((n, s) => n + s.hechas, 0);
+            const pctTotal = total ? Math.round(hechas / total * 100) : 0;
+            const meta = proyecto && proyecto.smart && proyecto.smart.especifica ? proyecto.smart.especifica : '';
+
+            let html = `<div class="gx-resumen">`;
+            if (paso) {
+                html += paso.completo
+                    ? `<div class="gx-paso">Proyecto completo: ${paso.de} de ${paso.de} etapas</div>`
+                    : `<div class="gx-paso">Estás en el paso ${paso.n} de ${paso.de}</div><div class="gx-paso-nombre">${escG(paso.etapa.area)}</div>`;
+            }
+            html += `<div class="gx-barra" style="margin:0.6rem 0 0.3rem;"><span style="width:${pctTotal}%;background:var(--purple);"></span></div>
+                <div class="gx-mini">${hechas} de ${total} actividades · ${pctTotal}% de avance${proyecto && proyecto.fechaLimite ? ' · hasta el ' + fechaCortaG(proyecto.fechaLimite) : ''}</div>`;
+            if (meta) html += `<div class="gx-linea"><span class="gx-lbl">Meta</span>${escG(meta)}</div>`;
+            if (plan.ritmo) html += `<div class="gx-linea"><span class="gx-lbl">Mi ritmo</span>${escG(plan.ritmo)}</div>`;
+            if (plan.niveles) {
+                html += `<div class="gx-linea"><span class="gx-lbl">Hasta dónde llegamos</span>`;
+                Object.keys(GANTT_NIVELES).forEach(k => {
+                    if (plan.niveles[k]) html += `<div style="margin-top:3px;">${chipG(GANTT_NIVELES[k].txt, GANTT_NIVELES[k].bg, GANTT_NIVELES[k].fg)} <span style="font-size:0.8rem;">${escG(plan.niveles[k])}</span></div>`;
+                });
+                html += `</div>`;
+            }
+            html += `</div>`;
+
+            stats.forEach((s, i) => {
+                const m = s.meta || {};
+                const est = GANTT_ESTADOS_ETAPA[s.estado];
+                const niv = GANTT_NIVELES[m.nivel];
+                const esActual = paso && !paso.completo && paso.etapa.area === s.area;
+                html += `<div class="gx-etapa" style="border-left-color:${s.color};${esActual ? 'box-shadow:0 0 0 2px ' + s.color + '33;' : ''}">
+                    <div class="gx-etapa-top">
+                        <h4 style="color:${s.color};">${escG(s.area)}</h4>
+                        <div class="gx-chips">${chipG(est.txt, est.bg, est.fg)}${niv ? chipG(niv.txt, niv.bg, niv.fg) : ''}${s.transversal ? chipG('Acompaña todas las etapas', '#f1f1f1', '#555') : ''}</div>
+                    </div>
+                    <div class="gx-barra" style="margin:0.5rem 0 0.25rem;"><span style="width:${s.pct}%;background:${s.color};"></span></div>
+                    <div class="gx-mini">${s.total ? `${s.hechas} de ${s.total} · ${s.pct}% de avance` : 'Sin actividades con fecha'}${s.inicio ? ` · ${fechaCortaG(s.inicio)} → ${fechaCortaG(s.fin)}` : ''}</div>`;
+                if (ganttEtapaEditando === s.area) {
+                    html += `<div class="gx-form">
+                        <label class="gx-lbl">Resultado que debe quedar construido</label>
+                        <textarea id="gxEtResultado" class="form-textarea" style="min-height:54px;">${escG(m.resultado)}</textarea>
+                        <label class="gx-lbl">Entregables (uno por línea)</label>
+                        <textarea id="gxEtEntregables" class="form-textarea" style="min-height:80px;">${escG(listaG(m.entregables).join('\n'))}</textarea>
+                        <label class="gx-lbl">Duración estimada</label>
+                        <input id="gxEtDuracion" class="form-input" value="${escG(m.duracion)}">
+                        <label class="gx-lbl">Hito de salida</label>
+                        <textarea id="gxEtHito" class="form-textarea" style="min-height:54px;">${escG(m.hito)}</textarea>
+                        <label class="gx-lbl">🚫 No hacer todavía (uno por línea)</label>
+                        <textarea id="gxEtNoHacer" class="form-textarea" style="min-height:80px;">${escG(listaG(m.noHacer).join('\n'))}</textarea>
+                        <label class="gx-lbl">Nota</label>
+                        <input id="gxEtNota" class="form-input" value="${escG(m.nota)}">
+                        <label class="gx-lbl">Nivel</label>
+                        <select id="gxEtNivel" class="form-select">
+                            <option value="">Sin nivel</option>
+                            ${Object.keys(GANTT_NIVELES).map(k => `<option value="${k}" ${m.nivel === k ? 'selected' : ''}>${GANTT_NIVELES[k].txt}</option>`).join('')}
+                        </select>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;margin-top:0.5rem;"><input type="checkbox" id="gxEtTransversal" ${m.transversal ? 'checked' : ''} style="width:16px;height:16px;"> Acompaña todas las etapas (no cuenta como paso)</label>
+                        <div class="gx-acciones">
+                            <button type="button" class="btn btn-primary btn-small" onclick="guardarEtapaGantt(${i})">Guardar</button>
+                            <button type="button" class="btn btn-secondary btn-small" onclick="ganttEtapaEditando=null; renderizarGantt();">Cancelar</button>
+                        </div>
+                    </div>`;
+                } else {
+                    if (m.resultado) html += `<div class="gx-linea"><span class="gx-lbl">Resultado</span>${escG(m.resultado)}</div>`;
+                    if (listaG(m.entregables).length) html += `<div class="gx-linea"><span class="gx-lbl">Entregables</span><ul>${listaG(m.entregables).map(x => `<li>${escG(x)}</li>`).join('')}</ul></div>`;
+                    if (m.duracion) html += `<div class="gx-linea"><span class="gx-lbl">Duración estimada</span>${escG(m.duracion)}</div>`;
+                    if (m.hito) html += `<div class="gx-linea"><span class="gx-lbl">🏁 Hito de salida</span>${escG(m.hito)}</div>`;
+                    if (m.nota) html += `<div class="gx-nota">${escG(m.nota)}</div>`;
+                    if (listaG(m.noHacer).length) html += `<div class="gx-nohacer"><span class="gx-lbl">🚫 No hacer todavía</span><ul>${listaG(m.noHacer).map(x => `<li>${escG(x)}</li>`).join('')}</ul></div>`;
+                    html += `<div class="gx-acciones"><button type="button" class="gx-link" onclick="editarEtapaGantt(${i})">✏️ ${s.meta ? 'Editar' : 'Agregar resultado, entregables y “no hacer todavía”'}</button></div>`;
+                }
+                html += `</div>`;
+            });
+            cont.innerHTML = html;
+        }
+        function editarEtapaGantt(i) {
+            const s = ganttStatsActuales[i];
+            if (!s) return;
+            ganttEtapaEditando = s.area;
+            renderizarGantt();
+        }
+        function guardarEtapaGantt(i) {
+            const s = ganttStatsActuales[i];
+            const proyectoId = ganttProyectoActualId();
+            if (!s || !proyectoId) return;
+            const plan = ganttPlanDe(proyectoId, true);
+            let m = plan.etapas.find(e => e.area === s.area);
+            if (!m) {
+                // Las áreas sin ficha se agregan respetando el orden en que se ven
+                ganttStatsActuales.forEach(x => { if (!plan.etapas.some(e => e.area === x.area)) plan.etapas.push({ area: x.area, resultado: '', entregables: [], duracion: '', hito: '', noHacer: [], nivel: '', nota: '', transversal: false }); });
+                m = plan.etapas.find(e => e.area === s.area);
+            }
+            m.resultado = document.getElementById('gxEtResultado').value.trim();
+            m.entregables = listaG(document.getElementById('gxEtEntregables').value);
+            m.duracion = document.getElementById('gxEtDuracion').value.trim();
+            m.hito = document.getElementById('gxEtHito').value.trim();
+            m.noHacer = listaG(document.getElementById('gxEtNoHacer').value);
+            m.nota = document.getElementById('gxEtNota').value.trim();
+            m.nivel = document.getElementById('gxEtNivel').value;
+            m.transversal = document.getElementById('gxEtTransversal').checked;
+            ganttEtapaEditando = null;
+            guardarDatos();
+            renderizarGantt();
+        }
+
+        // ---------- Vista 2 · Plan diario ----------
+        function etapasDelDiaGantt(proyectoId, actsDia) {
+            const plan = ganttPlanDe(proyectoId);
+            const cuenta = {};
+            actsDia.forEach(a => { const ar = a.area || 'Sin área'; cuenta[ar] = (cuenta[ar] || 0) + 1; });
+            const todas = ordenAreasGantt(proyectoId, Object.keys(cuenta));
+            const esTransversal = ar => { const m = plan.etapas.find(e => e.area === ar); return !!(m && m.transversal); };
+            const propias = todas.filter(ar => !esTransversal(ar));
+            const visibles = propias.length ? propias : todas;
+            // Etapa principal del día: la que tiene más bloques; si empatan, la más avanzada
+            let principal = null;
+            visibles.forEach(ar => { if (principal === null || cuenta[ar] >= cuenta[principal]) principal = ar; });
+            return { visibles, principal };
+        }
+        function noHacerDelDiaGantt(proyectoId, fecha, actsDia) {
+            const plan = ganttPlanDe(proyectoId);
+            const d = plan.dias[fecha] || {};
+            if (listaG(d.noHacer).length) return listaG(d.noHacer);
+            const { principal } = etapasDelDiaGantt(proyectoId, actsDia);
+            const m = principal ? plan.etapas.find(e => e.area === principal) : null;
+            return m ? listaG(m.noHacer) : [];
+        }
+        function estadoDiaGantt(proyectoId, fecha, actsDia) {
+            const d = ganttPlanDe(proyectoId).dias[fecha] || {};
+            if (d.estado && GANTT_ESTADOS_DIA[d.estado]) return d.estado;
+            if (!actsDia.length) return 'pendiente';
+            const hechas = actsDia.filter(a => a.completada).length;
+            if (hechas === actsDia.length) return 'completado';
+            return hechas > 0 ? 'proceso' : 'pendiente';
+        }
+        function chipsEtapasDiaG(proyectoId, actsDia) {
+            return etapasDelDiaGantt(proyectoId, actsDia).visibles.map(ar => chipG(ar, (ganttColorPorArea[ar] || '#888') + '22', ganttColorPorArea[ar] || '#555')).join(' ');
+        }
+
+        function ganttPanelDia(proyectoId, fecha, actsDia) {
+            const plan = ganttPlanDe(proyectoId);
+            const d = plan.dias[fecha] || {};
+            const noHacer = noHacerDelDiaGantt(proyectoId, fecha, actsDia);
+            const estado = estadoDiaGantt(proyectoId, fecha, actsDia);
+            const tieneCierre = !!(d.avance || d.costo || d.descubri || d.necesito);
+            const abierto = (fecha in ganttCierresEstado) ? ganttCierresEstado[fecha] : tieneCierre;
+
+            let arriba = '';
+            if (actsDia.length || d.resultado || d.nota) {
+                arriba = `<div class="gx-dia">
+                    <div class="gx-dia-top"><strong>${escG(fechaLargaG(fecha))}</strong> ${chipG(GANTT_ESTADOS_DIA[estado], '#fff', '#444')}</div>
+                    ${actsDia.length ? `<div class="gx-chips" style="margin-top:6px;">${chipsEtapasDiaG(proyectoId, actsDia)}</div>` : ''}
+                    <div class="gx-linea"><span class="gx-lbl">Resultado del día</span>${d.resultado ? escG(d.resultado) : '<span style="color:#aaa;">Sin definir</span>'}
+                        <button type="button" class="gx-link" onclick="editarResultadoDiaGantt('${fecha}')">✏️</button></div>
+                    ${d.nota ? `<div class="gx-nota">${escG(d.nota)}</div>` : ''}
+                    ${noHacer.length ? `<div class="gx-nohacer"><span class="gx-lbl">🚫 No hacer todavía</span><ul>${noHacer.map(x => `<li>${escG(x)}</li>`).join('')}</ul></div>` : ''}
+                </div>`;
+            }
+
+            const campo = (clave, etiqueta) => `<label class="gx-lbl">${etiqueta}</label>
+                <textarea class="form-textarea" style="min-height:48px;" onchange="guardarCampoDiaGantt('${fecha}','${clave}',this.value)">${escG(d[clave])}</textarea>`;
+            const abajo = `<details class="gx-cierre" ${abierto ? 'open' : ''} ontoggle="ganttCierreToggle('${fecha}', this.open)">
+                <summary>🌙 Cierre del día · 5 minutos</summary>
+                <label class="gx-lbl">Estado del día</label>
+                <select class="form-select" onchange="guardarCampoDiaGantt('${fecha}','estado',this.value)">
+                    <option value="">Automático (según lo marcado)</option>
+                    ${Object.keys(GANTT_ESTADOS_DIA).map(k => `<option value="${k}" ${d.estado === k ? 'selected' : ''}>${GANTT_ESTADOS_DIA[k]}</option>`).join('')}
+                </select>
+                ${campo('avance', '¿Qué avancé?')}
+                ${campo('costo', '¿Dónde me detuve o qué me costó?')}
+                ${campo('descubri', '¿Qué descubrí?')}
+                ${campo('necesito', '¿Qué necesito para continuar?')}
+                <div class="gx-acciones">
+                    <button type="button" class="btn btn-secondary btn-small" onclick="llevarDiaACondicionesGantt('${fecha}')">🧩 Llevar a Condiciones y sistemas</button>
+                    <button type="button" class="btn btn-primary btn-small" onclick="compartirResumenDiaGantt('${fecha}')">📤 Compartir resumen del día</button>
+                </div>
+                <div id="gxResumenSalida"></div>
+            </details>`;
+            return { arriba, abajo };
+        }
+        function ganttCierreToggle(fecha, abierto) {
+            ganttCierresEstado[fecha] = !!abierto;
+        }
+        function guardarCampoDiaGantt(fecha, campo, valor) {
+            const proyectoId = ganttProyectoActualId();
+            if (!proyectoId) return;
+            const plan = ganttPlanDe(proyectoId, true);
+            const d = plan.dias[fecha] || (plan.dias[fecha] = {});
+            d[campo] = valor;
+            guardarDatos();
+            if (campo === 'estado' || campo === 'resultado') { if (campo === 'estado') ganttCierresEstado[fecha] = true; renderizarGantt(); }
+        }
+        function editarResultadoDiaGantt(fecha) {
+            const proyectoId = ganttProyectoActualId();
+            if (!proyectoId) return;
+            const actual = (ganttPlanDe(proyectoId).dias[fecha] || {}).resultado || '';
+            const nuevo = prompt('Resultado esperado de este día:', actual);
+            if (nuevo === null) return;
+            const plan = ganttPlanDe(proyectoId, true);
+            (plan.dias[fecha] || (plan.dias[fecha] = {})).resultado = nuevo.trim();
+            guardarDatos();
+            renderizarGantt();
+        }
+        function actsDelDiaGantt(proyectoId, fecha) {
+            return appData.actividades.filter(a => a.proyectoId === proyectoId && a.fecha && a.fecha.split('T')[0] === fecha)
+                .sort((x, y) => new Date(x.fecha) - new Date(y.fecha));
+        }
+        function llevarDiaACondicionesGantt(fecha) {
+            const proyectoId = ganttProyectoActualId();
+            if (!proyectoId) return;
+            const d = ganttPlanDe(proyectoId).dias[fecha] || {};
+            const pendientes = actsDelDiaGantt(proyectoId, fecha).filter(a => !a.completada);
+            ganttCondBorrador = {
+                fecha,
+                accion: pendientes.length === 1 ? pendientes[0].nombre : '',
+                ocurrio: d.costo || '',
+                dificulto: '',
+                necesito: d.necesito || '',
+                ajuste: '', fechaPrueba: '', resultado: 'Por medir'
+            };
+            ganttCondEditando = 'nuevo';
+            cambiarSubvistaGantt('cond');
+        }
+        function textoResumenDiaGantt(proyectoId, fecha) {
+            const proyecto = appData.proyectos.find(p => p.id === proyectoId);
+            const acts = actsDelDiaGantt(proyectoId, fecha);
+            const d = ganttPlanDe(proyectoId).dias[fecha] || {};
+            const todas = appData.actividades.filter(a => a.proyectoId === proyectoId && a.fecha);
+            prepararColoresGantt(proyectoId, todas);
+            const paso = pasoActualGantt(statsEtapasGantt(proyectoId, todas));
+            const lineas = [`📅 ${fechaLargaG(fecha)} · ${proyecto ? proyecto.nombre : ''}`];
+            if (paso) lineas.push(paso.completo ? 'Proyecto completo' : `Paso ${paso.n} de ${paso.de}: ${paso.etapa.area}`);
+            if (acts.length) {
+                lineas.push(`${GANTT_ESTADOS_DIA[estadoDiaGantt(proyectoId, fecha, acts)]} · ${acts.filter(a => a.completada).length} de ${acts.length} actividades`);
+                acts.forEach(a => lineas.push(`${a.completada ? '✅' : '▫️'} ${a.nombre}`));
+            }
+            if (d.resultado) lineas.push('', `Resultado esperado: ${d.resultado}`);
+            if (d.avance) lineas.push(`Avancé: ${d.avance}`);
+            if (d.costo) lineas.push(`Me costó: ${d.costo}`);
+            if (d.descubri) lineas.push(`Descubrí: ${d.descubri}`);
+            if (d.necesito) lineas.push(`Necesito: ${d.necesito}`);
+            return lineas.join('\n');
+        }
+        function compartirResumenDiaGantt(fecha) {
+            const proyectoId = ganttProyectoActualId();
+            if (!proyectoId) return;
+            const texto = textoResumenDiaGantt(proyectoId, fecha);
+            const mostrar = (msg) => {
+                const out = document.getElementById('gxResumenSalida');
+                if (!out) return;
+                out.innerHTML = `<div class="gx-mini" style="margin-top:0.5rem;">${escG(msg)}</div><textarea class="form-textarea" style="min-height:140px;margin-top:0.3rem;font-size:0.8rem;" readonly onclick="this.select()">${escG(texto)}</textarea>`;
+            };
+            if (navigator.share) {
+                navigator.share({ text: texto }).catch(() => mostrar('Aquí está tu resumen: tócalo para copiarlo.'));
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(texto).then(() => mostrar('✓ Resumen copiado. Pégalo donde quieras.'), () => mostrar('Aquí está tu resumen: tócalo para copiarlo.'));
+                return;
+            }
+            mostrar('Aquí está tu resumen: tócalo para copiarlo.');
+        }
+        function verDiaGantt(fecha) {
+            ganttFechaRevision = fecha;
+            renderizarGantt();
+            const card = document.getElementById('gantt');
+            if (card && card.scrollIntoView) card.scrollIntoView({ block: 'start' });
+        }
+        function lunesDeG(f) {
+            const d = new Date(f + 'T00:00:00');
+            const dif = (d.getDay() + 6) % 7;
+            d.setDate(d.getDate() - dif);
+            return fechaHoraLocal(d).slice(0, 10);
+        }
+        function ganttSemanaToggle(clave, abierto) {
+            // Solo se recuerda cuando cambias lo que venía por defecto (abierta = la semana del día que estás viendo)
+            const porDefecto = clave === lunesDeG(ganttFechaRevision);
+            if (abierto === porDefecto) delete ganttSemanasToggle[clave]; else ganttSemanasToggle[clave] = abierto;
+        }
+
+        function renderizarGanttPlanDiarioLista(proyectoId, actsProyecto) {
+            const cont = document.getElementById('ganttPlanDiarioLista');
+            if (!cont) return;
+            const porFecha = {};
+            actsProyecto.forEach(a => { const f = a.fecha.split('T')[0]; (porFecha[f] = porFecha[f] || []).push(a); });
+            const fechas = Object.keys(porFecha).sort();
+            if (!fechas.length) { cont.innerHTML = ''; return; }
+            const plan = ganttPlanDe(proyectoId);
+            const semanas = {};
+            fechas.forEach(f => { const k = lunesDeG(f); (semanas[k] = semanas[k] || []).push(f); });
+            const semanaVista = lunesDeG(ganttFechaRevision);
+
+            let html = `<div class="gx-titulo">Todos los días del plan</div><div class="gx-mini" style="margin-bottom:0.6rem;">Toca un día para abrirlo arriba.</div>`;
+            Object.keys(semanas).sort().forEach(k => {
+                const dias = semanas[k];
+                const acts = dias.reduce((l, f) => l.concat(porFecha[f]), []);
+                const hechas = acts.filter(a => a.completada).length;
+                const abierta = ganttSemanasToggle[k] !== undefined ? ganttSemanasToggle[k] : k === semanaVista;
+                html += `<details class="gx-semana" ${abierta ? 'open' : ''} ontoggle="ganttSemanaToggle('${k}', this.open)">
+                    <summary>Semana del ${fechaCortaG(dias[0])} al ${fechaCortaG(dias[dias.length - 1])} <span class="gx-mini">· ${hechas} de ${acts.length}</span></summary>
+                    <table class="gx-tabla"><thead><tr><th>Fecha</th><th>Día</th><th>Etapa</th><th>Actividades</th><th>Resultado del día</th><th>Estado</th><th>🚫 No hacer todavía</th></tr></thead><tbody>`;
+                dias.forEach(f => {
+                    const lista = porFecha[f].slice().sort((x, y) => new Date(x.fecha) - new Date(y.fecha));
+                    const d = plan.dias[f] || {};
+                    const noHacer = noHacerDelDiaGantt(proyectoId, f, lista);
+                    const sel = f === ganttFechaRevision;
+                    html += `<tr class="${sel ? 'gx-fila-sel' : ''}" onclick="verDiaGantt('${f}')">
+                        <td class="gx-td-fecha"><strong>${fechaCortaG(f)}</strong></td>
+                        <td class="gx-td-dia">${GANTT_DIAS_SEM[new Date(f + 'T00:00:00').getDay()]}</td>
+                        <td data-l="Etapa">${chipsEtapasDiaG(proyectoId, lista)}</td>
+                        <td data-l="Actividades"><ol>${lista.map(a => `<li class="${a.completada ? 'gx-hecha' : ''}">${escG(a.nombre)}</li>`).join('')}</ol></td>
+                        <td data-l="Resultado del día">${d.resultado ? escG(d.resultado) : '<span style="color:#bbb;">—</span>'}${d.nota ? `<div class="gx-nota">${escG(d.nota)}</div>` : ''}</td>
+                        <td data-l="Estado" style="white-space:nowrap;">${GANTT_ESTADOS_DIA[estadoDiaGantt(proyectoId, f, lista)]}</td>
+                        <td data-l="🚫 No hacer todavía" class="gx-td-nohacer">${noHacer.length ? `<ul>${noHacer.map(x => `<li>${escG(x)}</li>`).join('')}</ul>` : '<span style="color:#bbb;">—</span>'}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table></details>`;
+            });
+            cont.innerHTML = html;
+        }
+
+        // ---------- Vista 3 · Condiciones y sistemas ----------
+        const GANTT_COND_CAMPOS = [
+            ['accion', 'Acción', 'La acción que estaba planificada'],
+            ['ocurrio', 'Qué ocurrió', 'Lo que pasó de verdad'],
+            ['dificulto', 'Qué lo dificultó', 'El obstáculo real'],
+            ['necesito', 'Qué necesito', 'Claridad, energía, seguridad, tiempo, una herramienta, apoyo…'],
+            ['ajuste', 'Ajuste / sistema', 'Lo que voy a probar']
+        ];
+        function renderizarGanttCondiciones(proyectoId) {
+            const cont = document.getElementById('ganttCondContenido');
+            const lista = (appData.ganttCondiciones || []).filter(c => c.proyectoId === proyectoId)
+                .sort((x, y) => (y.fecha || '').localeCompare(x.fecha || '') || y.id - x.id);
+            let html = `<p class="gx-intro">No basta con saber qué acciones necesita tu negocio: necesitas crear las condiciones y sistemas que te permitan sostenerlas. Cuando una acción no se sostiene, anótala aquí.</p>`;
+
+            if (ganttCondEditando !== null) {
+                const c = ganttCondEditando === 'nuevo' ? (ganttCondBorrador || { fecha: hoyLocal(), resultado: 'Por medir' }) : (lista.find(x => x.id === ganttCondEditando) || {});
+                html += `<div class="gx-form">
+                    <label class="gx-lbl">Fecha</label>
+                    <input type="date" id="gxCoFecha" class="form-input" value="${escG(c.fecha || '')}">
+                    ${GANTT_COND_CAMPOS.map(([k, t, ph]) => `<label class="gx-lbl">${t}</label><textarea id="gxCo_${k}" class="form-textarea" style="min-height:50px;" placeholder="${escG(ph)}">${escG(c[k])}</textarea>`).join('')}
+                    <label class="gx-lbl">Fecha de prueba</label>
+                    <input type="date" id="gxCoPrueba" class="form-input" value="${escG(c.fechaPrueba || '')}">
+                    <label class="gx-lbl">Resultado</label>
+                    <input id="gxCoResultado" class="form-input" list="gxCoResultados" value="${escG(c.resultado || '')}" placeholder="Por medir · Funcionó · No funcionó">
+                    <datalist id="gxCoResultados"><option value="Por medir"><option value="Funcionó"><option value="Funcionó a medias"><option value="No funcionó"></datalist>
+                    <div class="gx-acciones">
+                        <button type="button" class="btn btn-primary btn-small" onclick="guardarCondicionGantt()">Guardar</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="ganttCondEditando=null; ganttCondBorrador=null; renderizarGantt();">Cancelar</button>
+                    </div>
+                </div>`;
+            } else {
+                html += `<div class="gx-acciones" style="margin-bottom:0.8rem;"><button type="button" class="btn btn-primary btn-small" onclick="ganttCondEditando='nuevo'; ganttCondBorrador=null; renderizarGantt();">＋ Nuevo registro</button></div>`;
+            }
+
+            // Lo que ya anotaste en tus actividades (Limitación / Qué necesito) y aún no está en el registro
+            const usadas = new Set((appData.ganttCondiciones || []).map(c => c.actividadId).filter(Boolean));
+            const sugeridas = appData.actividades.filter(a => a.proyectoId === proyectoId && (a.limitacion || a.necesito) && !usadas.has(a.id));
+            if (sugeridas.length && ganttCondEditando === null) {
+                html += `<div class="gx-sugeridas"><span class="gx-lbl">Desde tus actividades</span>` + sugeridas.map(a => `<div class="gx-sug">
+                    <div><strong>${escG(a.nombre)}</strong>${a.limitacion ? `<br>🔒 ${escG(a.limitacion)}` : ''}${a.necesito ? `<br>🛠️ ${escG(a.necesito)}` : ''}</div>
+                    <button type="button" class="gx-link" onclick="condicionDesdeActividadGantt(${a.id})">＋ Registrar</button>
+                </div>`).join('') + `</div>`;
+            }
+
+            if (!lista.length) {
+                html += `<p style="font-size:0.85rem;color:#aaa;">Todavía no hay registros en este proyecto.</p>`;
+            } else {
+                html += `<table class="gx-tabla"><thead><tr><th>Acción</th><th>Qué ocurrió</th><th>Qué lo dificultó</th><th>Qué necesito</th><th>Ajuste / sistema</th><th>Fecha de prueba</th><th>Resultado</th><th></th></tr></thead><tbody>`;
+                lista.forEach(c => {
+                    html += `<tr>
+                        <td data-l="Acción"><strong>${escG(c.accion)}</strong>${c.fecha ? `<div class="gx-mini">${fechaCortaG(c.fecha)}</div>` : ''}</td>
+                        <td data-l="Qué ocurrió">${escG(c.ocurrio) || '—'}</td>
+                        <td data-l="Qué lo dificultó">${escG(c.dificulto) || '—'}</td>
+                        <td data-l="Qué necesito">${escG(c.necesito) || '—'}</td>
+                        <td data-l="Ajuste / sistema">${escG(c.ajuste) || '—'}</td>
+                        <td data-l="Fecha de prueba" style="white-space:nowrap;">${c.fechaPrueba ? fechaCortaG(c.fechaPrueba) : '—'}</td>
+                        <td data-l="Resultado">${escG(c.resultado) || '—'}</td>
+                        <td style="white-space:nowrap;"><button type="button" class="gx-link" title="Editar" onclick="ganttCondEditando=${c.id}; renderizarGantt();">✏️</button> <button type="button" class="gx-link" title="Eliminar" style="color:#c62828;" onclick="eliminarCondicionGantt(${c.id})">✕</button></td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+            cont.innerHTML = html;
+        }
+        function guardarCondicionGantt() {
+            const proyectoId = ganttProyectoActualId();
+            if (!proyectoId) return;
+            if (!appData.ganttCondiciones) appData.ganttCondiciones = [];
+            const datos = {
+                fecha: document.getElementById('gxCoFecha').value,
+                fechaPrueba: document.getElementById('gxCoPrueba').value,
+                resultado: document.getElementById('gxCoResultado').value.trim()
+            };
+            GANTT_COND_CAMPOS.forEach(([k]) => { datos[k] = document.getElementById('gxCo_' + k).value.trim(); });
+            if (!datos.accion && !datos.ocurrio) { alert('Escribe al menos la acción o qué ocurrió.'); return; }
+            if (ganttCondEditando === 'nuevo') {
+                const nuevo = Object.assign({ id: Date.now(), proyectoId }, datos);
+                if (ganttCondBorrador && ganttCondBorrador.actividadId) nuevo.actividadId = ganttCondBorrador.actividadId;
+                appData.ganttCondiciones.push(nuevo);
+            } else {
+                const c = appData.ganttCondiciones.find(x => x.id === ganttCondEditando);
+                if (c) Object.assign(c, datos);
+            }
+            ganttCondEditando = null; ganttCondBorrador = null;
+            guardarDatos();
+            renderizarGantt();
+        }
+        function eliminarCondicionGantt(id) {
+            if (!confirm('¿Eliminar este registro?')) return;
+            appData.ganttCondiciones = (appData.ganttCondiciones || []).filter(c => c.id !== id);
+            guardarDatos();
+            renderizarGantt();
+        }
+        function condicionDesdeActividadGantt(actividadId) {
+            const a = appData.actividades.find(x => x.id === actividadId);
+            if (!a) return;
+            ganttCondBorrador = { fecha: hoyLocal(), actividadId: a.id, accion: a.nombre, ocurrio: '', dificulto: a.limitacion || '', necesito: a.necesito || '', ajuste: '', fechaPrueba: '', resultado: 'Por medir' };
+            ganttCondEditando = 'nuevo';
+            renderizarGantt();
+        }
+
+        // ---------- Vista 4 · Aprendizajes y decisiones ----------
+        function renderizarGanttDecisiones(proyectoId) {
+            const cont = document.getElementById('ganttDecContenido');
+            const lista = (appData.ganttDecisiones || []).filter(d => d.proyectoId === proyectoId)
+                .sort((x, y) => (y.fecha || '').localeCompare(x.fecha || '') || y.id - x.id);
+            let html = `<p class="gx-intro">Lo que ya decidimos queda escrito aquí. Una decisión se vuelve a abrir con evidencia nueva, no por duda ni por una idea distinta.</p>`;
+
+            if (ganttDecEditando !== null) {
+                const d = ganttDecEditando === 'nuevo' ? { fecha: hoyLocal(), tipo: 'decision' } : (lista.find(x => x.id === ganttDecEditando) || {});
+                html += `<div class="gx-form">
+                    <label class="gx-lbl">Fecha</label>
+                    <input type="date" id="gxDeFecha" class="form-input" value="${escG(d.fecha || '')}">
+                    <label class="gx-lbl">Tipo</label>
+                    <select id="gxDeTipo" class="form-select">
+                        <option value="decision" ${d.tipo !== 'aprendizaje' ? 'selected' : ''}>Decisión</option>
+                        <option value="aprendizaje" ${d.tipo === 'aprendizaje' ? 'selected' : ''}>Aprendizaje</option>
+                    </select>
+                    <label class="gx-lbl">Qué decidí o qué aprendí</label>
+                    <textarea id="gxDeTexto" class="form-textarea" style="min-height:60px;">${escG(d.texto)}</textarea>
+                    <label class="gx-lbl">En qué evidencia se basa</label>
+                    <textarea id="gxDeEvidencia" class="form-textarea" style="min-height:50px;">${escG(d.evidencia)}</textarea>
+                    <label class="gx-lbl">Se vuelve a revisar solo si…</label>
+                    <textarea id="gxDeRevisar" class="form-textarea" style="min-height:50px;">${escG(d.revisar)}</textarea>
+                    <div class="gx-acciones">
+                        <button type="button" class="btn btn-primary btn-small" onclick="guardarDecisionGantt()">Guardar</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="ganttDecEditando=null; renderizarGantt();">Cancelar</button>
+                    </div>
+                </div>`;
+            } else {
+                html += `<div class="gx-acciones" style="margin-bottom:0.8rem;"><button type="button" class="btn btn-primary btn-small" onclick="ganttDecEditando='nuevo'; renderizarGantt();">＋ Nueva decisión o aprendizaje</button></div>`;
+            }
+
+            if (!lista.length) {
+                html += `<p style="font-size:0.85rem;color:#aaa;">Todavía no hay decisiones ni aprendizajes en este proyecto.</p>`;
+            } else {
+                html += `<table class="gx-tabla"><thead><tr><th>Fecha</th><th>Tipo</th><th>Decisión o aprendizaje</th><th>Evidencia</th><th>Se revisa solo si…</th><th></th></tr></thead><tbody>`;
+                lista.forEach(d => {
+                    const esAp = d.tipo === 'aprendizaje';
+                    html += `<tr>
+                        <td class="gx-td-fecha">${d.fecha ? fechaCortaG(d.fecha) : '—'}</td>
+                        <td class="gx-td-dia">${esAp ? chipG('💡 Aprendizaje', '#FFF4D6', '#7A5C00') : chipG('✔ Decisión', '#EEE8F7', '#4B168E')}</td>
+                        <td data-l=""><strong>${escG(d.texto)}</strong></td>
+                        <td data-l="Evidencia">${escG(d.evidencia) || '—'}</td>
+                        <td data-l="Se revisa solo si…">${escG(d.revisar) || '—'}</td>
+                        <td style="white-space:nowrap;"><button type="button" class="gx-link" title="Editar" onclick="ganttDecEditando=${d.id}; renderizarGantt();">✏️</button> <button type="button" class="gx-link" title="Eliminar" style="color:#c62828;" onclick="eliminarDecisionGantt(${d.id})">✕</button></td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+            cont.innerHTML = html;
+        }
+        function guardarDecisionGantt() {
+            const proyectoId = ganttProyectoActualId();
+            if (!proyectoId) return;
+            if (!appData.ganttDecisiones) appData.ganttDecisiones = [];
+            const datos = {
+                fecha: document.getElementById('gxDeFecha').value,
+                tipo: document.getElementById('gxDeTipo').value,
+                texto: document.getElementById('gxDeTexto').value.trim(),
+                evidencia: document.getElementById('gxDeEvidencia').value.trim(),
+                revisar: document.getElementById('gxDeRevisar').value.trim()
+            };
+            if (!datos.texto) { alert('Escribe la decisión o el aprendizaje.'); return; }
+            if (ganttDecEditando === 'nuevo') appData.ganttDecisiones.push(Object.assign({ id: Date.now(), proyectoId }, datos));
+            else { const d = appData.ganttDecisiones.find(x => x.id === ganttDecEditando); if (d) Object.assign(d, datos); }
+            ganttDecEditando = null;
+            guardarDatos();
+            renderizarGantt();
+        }
+        function eliminarDecisionGantt(id) {
+            if (!confirm('¿Eliminar este registro?')) return;
+            appData.ganttDecisiones = (appData.ganttDecisiones || []).filter(d => d.id !== id);
+            guardarDatos();
+            renderizarGantt();
+        }
+
         function renderizarGantt() {
             const sel = document.getElementById('ganttProyectoSelect');
             if (!sel) return;
             const seleccionPrevia = sel.value;
             sel.innerHTML = appData.proyectos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
-            const contenedores = ['ganttContenido', 'ganttHoyContenido', 'ganttDiaContenido'];
+            const contenedores = ['ganttContenido', 'ganttHoyContenido', 'ganttDiaContenido', 'ganttMapaContenido', 'ganttCondContenido', 'ganttDecContenido'];
             if (appData.proyectos.length === 0) {
-                contenedores.forEach(id => document.getElementById(id).innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Crea un proyecto primero en 🎯 Proyectos, luego agrégale actividades con un Área para verlas aquí como carta Gantt.</p>');
+                contenedores.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = '<p style="font-size:0.85rem;color:#aaa;">Crea un proyecto primero en 🎯 Proyectos, luego agrégale actividades con un Área para verlas aquí como carta Gantt.</p>'; });
+                const listaDias = document.getElementById('ganttPlanDiarioLista');
+                if (listaDias) listaDias.innerHTML = '';
                 return;
             }
             if (seleccionPrevia && appData.proyectos.some(p => p.id === parseInt(seleccionPrevia))) sel.value = seleccionPrevia;
             const proyectoId = parseInt(sel.value);
             const actsProyecto = appData.actividades.filter(a => a.proyectoId === proyectoId && a.fecha);
+            prepararColoresGantt(proyectoId, actsProyecto);
 
             if (ganttSubvista === 'carta') {
                 renderizarGanttBarras(actsProyecto, proyectoId);
+
+            } else if (ganttSubvista === 'mapa') {
+                renderizarGanttMapa(proyectoId, actsProyecto);
+
+            } else if (ganttSubvista === 'cond') {
+                renderizarGanttCondiciones(proyectoId);
+
+            } else if (ganttSubvista === 'dec') {
+                renderizarGanttDecisiones(proyectoId);
 
             } else if (ganttSubvista === 'hoy') {
                 const cont = document.getElementById('ganttHoyContenido');
                 const hoy = new Date(); hoy.setHours(0,0,0,0);
                 const atrasadas = actsProyecto.filter(a => { const f = new Date(a.fecha); f.setHours(0,0,0,0); return f < hoy && !a.completada; });
                 const deHoy = actsProyecto.filter(a => { const f = new Date(a.fecha); f.setHours(0,0,0,0); return f.getTime() === hoy.getTime(); });
+                const panel = ganttPanelDia(proyectoId, hoyLocal(), deHoy);
                 let html = '';
                 if (atrasadas.length) {
                     html += `<div style="font-weight:700;color:#E65100;font-size:0.85rem;margin-bottom:0.5rem;">⚠️ ATRASADAS (${atrasadas.length})</div>`;
                     html += renderizarGrupoAreasGantt(agruparActividadesPorArea(atrasadas), () => true);
                 }
                 html += `<div style="font-weight:700;color:var(--purple);font-size:0.85rem;margin:0.75rem 0 0.5rem;">HOY</div>`;
+                html += panel.arriba;
                 html += deHoy.length ? renderizarGrupoAreasGantt(agruparActividadesPorArea(deHoy), () => false) : '<p style="font-size:0.85rem;color:#aaa;">Sin actividades programadas para hoy en este proyecto.</p>';
+                html += panel.abajo;
                 cont.innerHTML = html;
 
             } else {
@@ -3722,8 +4529,12 @@
                 if (inputFecha) inputFecha.value = ganttFechaRevision;
                 const diaObjetivo = new Date(ganttFechaRevision + 'T00:00:00').toDateString();
                 const actsDia = actsProyecto.filter(a => new Date(a.fecha).toDateString() === diaObjetivo);
+                const panel = ganttPanelDia(proyectoId, ganttFechaRevision, actsDia);
                 const cont = document.getElementById('ganttDiaContenido');
-                cont.innerHTML = actsDia.length ? renderizarGrupoAreasGantt(agruparActividadesPorArea(actsDia), () => false) : '<p style="font-size:0.85rem;color:#aaa;">Sin actividades este día en este proyecto.</p>';
+                cont.innerHTML = panel.arriba
+                    + (actsDia.length ? renderizarGrupoAreasGantt(agruparActividadesPorArea(actsDia), () => false) : '<p style="font-size:0.85rem;color:#aaa;">Sin actividades este día en este proyecto.</p>')
+                    + panel.abajo;
+                renderizarGanttPlanDiarioLista(proyectoId, actsProyecto);
             }
         }
 
