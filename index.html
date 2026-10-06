@@ -1127,10 +1127,15 @@
                 <h2 class="card-title">⚙️ Parámetros</h2>
 
                 <h3 style="color: var(--purple); margin-bottom: 1rem;">💾 Datos</h3>
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
-                    <button class="btn btn-primary" onclick="exportarDatos()">📥 Exportar Datos</button>
-                    <button class="btn btn-secondary" onclick="importarDatos()">📤 Importar Datos</button>
+                <p style="font-size:0.85rem; color:#666; margin-bottom:0.75rem;">Descarga un archivo con todos tus proyectos, actividades, hábitos y diario. Guárdalo en un lugar seguro (tu correo, Drive o el computador).</p>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                    <button class="btn btn-primary" onclick="exportarDatos()">💾 Respaldar mis datos (descargar archivo)</button>
+                    <button class="btn btn-secondary" onclick="importarDatos()">📤 Restaurar desde un respaldo</button>
+                    <button class="btn btn-secondary" onclick="mostrarCopiasLocales()">🕘 Copias automáticas de este aparato</button>
                 </div>
+                <p id="ultimoRespaldoTxt" style="font-size:0.78rem; color:#888; margin-bottom:0.5rem;"></p>
+                <div id="copiasLocalesBox" style="display:none; margin-bottom:1.5rem;"></div>
+                <div style="margin-bottom:2rem;"></div>
 
                 <h3 style="color: var(--purple); margin-bottom: 0.75rem;">💼 Horas Laborales por día</h3>
                 <p style="font-size:0.82rem; color:#888; margin-bottom:1rem;">Horas de trabajo planificables. La agenda marcará en rojo si se supera. Usa 0 para días sin trabajo.</p>
@@ -1994,6 +1999,7 @@
             actualizarFiltrosProyectos();
             actualizarSelectsHabito();
             renderizarTodo();
+            actualizarTextoUltimoRespaldo();
             // Auth listener — se dispara al cargar y cuando el usuario inicia/cierra sesión
             sb.auth.onAuthStateChange((event, session) => {
                 usuarioActual = session?.user || null;
@@ -5814,7 +5820,9 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'gestor_ser_datos_' + hoyLocal() + '.json';
+            a.download = 'Agenda-SER_respaldo_' + hoyLocal() + '.json';
+            try { localStorage.setItem('ultimoRespaldoSER', new Date().toISOString()); } catch (e) {}
+            actualizarTextoUltimoRespaldo();
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -5832,7 +5840,7 @@
                 reader.onload = function(ev) {
                     try {
                         const datos = JSON.parse(ev.target.result);
-                        if (confirm('¿Reemplazar todos los datos actuales con los datos importados? Esta acción no se puede deshacer.')) {
+                        if (confirm('¿Restaurar este respaldo? Reemplaza los datos que ves ahora en este aparato.')) {
                             Object.assign(appData, datos);
                             guardarDatos();
                             actualizarSelectsCreencias();
@@ -5853,9 +5861,59 @@
         }
 
         // ALMACENAMIENTO
+        // Cuántas cosas guardadas tiene un conjunto de datos (para detectar "vacío")
+        function pesoDatos(d) {
+            if (!d) return 0;
+            return ['proyectos', 'actividades', 'habitos', 'diario'].reduce((n, k) => n + (Array.isArray(d[k]) ? d[k].length : 0), 0);
+        }
+
+        function actualizarTextoUltimoRespaldo() {
+            const el = document.getElementById('ultimoRespaldoTxt');
+            if (!el) return;
+            let f = null;
+            try { f = localStorage.getItem('ultimoRespaldoSER'); } catch (e) {}
+            el.textContent = f ? 'Último respaldo descargado: ' + new Date(f).toLocaleString('es-CL') : 'Todavía no has descargado ningún respaldo en este aparato.';
+        }
+
+        function mostrarCopiasLocales() {
+            const box = document.getElementById('copiasLocalesBox');
+            if (!box) return;
+            const claves = Object.keys(localStorage).filter(k => k.startsWith('appDataSER_respaldo_')).sort().reverse();
+            if (box.style.display === 'block') { box.style.display = 'none'; return; }
+            box.style.display = 'block';
+            if (!claves.length) { box.innerHTML = '<p style="font-size:0.82rem;color:#888;">Todavía no hay copias automáticas en este aparato. Se crean solas, una por día, cuando hay datos.</p>'; return; }
+            box.innerHTML = '<p style="font-size:0.82rem;color:#666;margin-bottom:0.4rem;">Copias automáticas (una por día). Elige una para restaurarla:</p>' +
+                claves.map(k => { const f = k.replace('appDataSER_respaldo_', ''); let n = 0; try { n = pesoDatos(JSON.parse(localStorage.getItem(k))); } catch (e) {} return `<button class="btn btn-secondary btn-small" style="margin:0 0.4rem 0.4rem 0;" onclick="restaurarCopiaLocal('${k}')">${f} · ${n} elementos</button>`; }).join('');
+        }
+
+        function restaurarCopiaLocal(clave) {
+            if (!confirm('¿Restaurar esta copia? Reemplaza lo que ves ahora en este aparato.')) return;
+            try {
+                const datos = JSON.parse(localStorage.getItem(clave));
+                Object.assign(appData, datos);
+                guardarDatos();
+                actualizarSelectsCreencias(); actualizarSelectProyectos(); actualizarFiltrosProyectos();
+                renderizarTodo();
+                alert('✅ Copia restaurada.');
+            } catch (e) { alert('❌ No se pudo leer esa copia.'); }
+        }
+
+        // Respaldo automático en este aparato: una copia por día (últimos 5 días), solo si hay datos
+        function respaldoLocalDiario() {
+            try {
+                if (pesoDatos(appData) === 0) return;
+                const clave = 'appDataSER_respaldo_' + hoyLocal();
+                if (localStorage.getItem(clave)) return;
+                localStorage.setItem(clave, JSON.stringify(appData));
+                const viejas = Object.keys(localStorage).filter(k => k.startsWith('appDataSER_respaldo_')).sort();
+                while (viejas.length > 5) localStorage.removeItem(viejas.shift());
+            } catch (e) {}
+        }
+
         function guardarDatos() {
             appData._lastUpdated = Date.now();
             localStorage.setItem('appDataSER', JSON.stringify(appData));
+            respaldoLocalDiario();
             sincronizarHaciaSupabase();
         }
 
@@ -6527,10 +6585,11 @@
             if (usuarioActual) {
                 div.innerHTML = `<div style="display:flex; align-items:center; gap:0.5rem;">
                     <span style="color:rgba(255,255,255,0.85); font-size:0.78rem; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${nubeOk ? usuarioActual.email : 'No se pudo guardar en la nube: ' + nubeDetalle}">${nubeOk ? '☁️' : '⚠️ Sin guardar en la nube ·'} ${usuarioActual.email}</span>
+                    <button onclick="exportarDatos()" title="Descargar un archivo de respaldo con todos tus datos" style="background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:20px; padding:4px 10px; font-size:0.75rem; cursor:pointer;">💾 Respaldar</button>
                     <button onclick="cerrarSesion()" style="background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:20px; padding:4px 10px; font-size:0.75rem; cursor:pointer;">Salir</button>
                 </div>`;
             } else {
-                div.innerHTML = `<button onclick="abrirModalAuth()" style="background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:20px; padding:4px 14px; font-size:0.8rem; cursor:pointer;">Iniciar sesión</button>`;
+                div.innerHTML = `<button onclick="exportarDatos()" title="Descargar un archivo de respaldo con todos tus datos" style="background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:20px; padding:4px 10px; font-size:0.75rem; cursor:pointer; margin-right:0.4rem;">💾 Respaldar</button><button onclick="abrirModalAuth()" style="background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:20px; padding:4px 14px; font-size:0.8rem; cursor:pointer;">Iniciar sesión</button>`;
             }
         }
 
@@ -6572,17 +6631,28 @@
         async function cerrarSesion() {
             await sb.auth.signOut();
             usuarioActual = null;
+            nubeLeida = false; pesoNubeConocido = 0; avisoReduccionMostrado = false;
             actualizarHeaderAuth();
         }
 
         async function sincronizarDesdeSupabase() {
             const { data, error } = await sb.from('user_data').select('data').eq('user_id', usuarioActual.id).single();
             if (error && error.code !== 'PGRST116') { console.error('Error cargando datos:', error); return; }
+            nubeLeida = true;
+            pesoNubeConocido = pesoDatos(data?.data);
             if (data?.data && Object.keys(data.data).length > 0) {
                 const remoto = data.data;
                 const tsRemoto = remoto._lastUpdated || 0;
                 const tsLocal = appData._lastUpdated || 0;
+                // PROTECCIÓN: si la nube viene vacía pero este aparato tiene datos, nunca se borra lo local: se restaura la nube desde aquí
+                if (pesoDatos(remoto) === 0 && pesoDatos(appData) > 0) {
+                    console.warn('La nube estaba vacía; se restaura desde este aparato.');
+                    await sincronizarHaciaSupabase(true);
+                    return;
+                }
                 if (tsRemoto > tsLocal) {
+                    // Antes de reemplazar lo de este aparato, se guarda una copia por si acaso
+                    try { if (pesoDatos(appData) > 0) localStorage.setItem('appDataSER_antes_de_nube', JSON.stringify(appData)); } catch (e) {}
                     // Nube es más nueva: usar datos remotos
                     if (!remoto.rituales || remoto.rituales.length === 0) remoto.rituales = RITUALES_DEFAULT;
                     if (!remoto.rutinasPoder) remoto.rutinasPoder = RUTINA_PODER_DEFAULT;
@@ -6602,11 +6672,26 @@
             }
         }
 
-        async function sincronizarHaciaSupabase() {
+        // Protección de la nube: no se sube nada hasta haber leído lo que hay allá, y no se pisa con algo mucho más pequeño
+        let nubeLeida = false, pesoNubeConocido = 0, avisoReduccionMostrado = false;
+        async function sincronizarHaciaSupabase(forzar) {
             if (!usuarioActual) return;
+            if (!nubeLeida && !forzar) return;
+            const pesoLocal = pesoDatos(appData);
+            if (!forzar && pesoNubeConocido > 0 && (pesoLocal === 0 || (pesoNubeConocido >= 6 && pesoLocal < pesoNubeConocido * 0.5))) {
+                if (!avisoReduccionMostrado) {
+                    avisoReduccionMostrado = true;
+                    const ok = confirm(`⚠️ Protección de tus datos\n\nLa nube tiene ${pesoNubeConocido} elementos y este aparato solo ${pesoLocal}.\n\nSi guardas ahora, podrías perder datos.\n\nAceptar = guardar igual (si borraste cosas a propósito).\nCancelar = NO guardar (recomendado).`);
+                    if (ok) { pesoNubeConocido = 0; } else { marcarEstadoNube(false, 'Protección: no se guardó para no perder datos'); return; }
+                } else if (pesoNubeConocido > 0) {
+                    marcarEstadoNube(false, 'Protección: no se guardó para no perder datos');
+                    return;
+                }
+            }
             try {
                 const { error } = await sb.from('user_data').upsert({ user_id: usuarioActual.id, data: appData, updated_at: new Date().toISOString() });
                 if (error) console.error('Error guardando en la nube:', error);
+                else pesoNubeConocido = pesoLocal;
                 marcarEstadoNube(!error, error ? error.message : '');
             } catch (e) {
                 console.error('Error guardando en la nube:', e);

@@ -1,4 +1,4 @@
-const CACHE = 'gestor-ser-v16';
+const CACHE = 'gestor-ser-v18';
 const ARCHIVOS = [
   '/GestorSER/',
   '/GestorSER/index.html',
