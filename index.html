@@ -967,12 +967,17 @@
                 </div>
 
                 <div id="importadorGantt" style="display:none; border:1px solid #e0d4f7; border-radius:10px; padding:0.85rem; margin-bottom:1rem; background:#faf8fd;">
-                    <p style="font-size:0.8rem; color:#666; margin-bottom:0.5rem;">Sube el archivo .json de la carta Gantt (te lo entrego ya armado). Si el proyecto ya existe, se actualiza sin duplicar; si no existe, se crea.</p>
+                    <p style="font-size:0.8rem; color:#666; margin-bottom:0.5rem;">Sube el archivo .json de la carta Gantt (te lo entrego ya armado), elige en qué proyecto quieres cargarla y presiona Importar.</p>
                     <input type="file" id="ganttImportFile" accept=".json,application/json" style="margin-bottom:0.5rem; font-size:0.8rem;" onchange="cargarArchivoGantt(event)">
                     <details style="margin-bottom:0.5rem;">
                         <summary style="font-size:0.75rem; color:#999; cursor:pointer;">o pegar el JSON como texto</summary>
-                        <textarea id="ganttImportText" class="form-textarea" style="min-height:120px; font-family:monospace; font-size:0.78rem; margin-top:0.4rem;" placeholder='{"proyecto": {...}, "actividades": [...] }'></textarea>
+                        <textarea id="ganttImportText" class="form-textarea" style="min-height:120px; font-family:monospace; font-size:0.78rem; margin-top:0.4rem;" placeholder='{"proyecto": {...}, "actividades": [...] }' oninput="prepararImportacionGantt()"></textarea>
                     </details>
+                    <div id="ganttDestinoBox" style="margin-top:0.5rem; padding:0.6rem; border:1px dashed #d4c3f0; border-radius:8px; background:#fff;">
+                        <label style="display:block; font-size:0.78rem; color:#4B168E; font-weight:600; margin-bottom:0.3rem;">📁 ¿En qué proyecto la cargo?</label>
+                        <select class="form-select" id="ganttDestino" onchange="cambioDestinoGantt()"></select>
+                        <input type="text" class="form-input" id="ganttDestinoNombre" placeholder="Nombre del proyecto nuevo" style="display:none; margin-top:0.4rem;">
+                    </div>
                     <div style="display:flex; gap:0.5rem; margin-top:0.5rem; align-items:center;">
                         <button type="button" class="btn btn-primary btn-small" onclick="importarGantt()">Importar</button>
                         <span id="ganttImportResultado" style="font-size:0.78rem; color:var(--green);"></span>
@@ -3518,6 +3523,36 @@
         function toggleImportadorGantt() {
             const el = document.getElementById('importadorGantt');
             el.style.display = el.style.display === 'none' ? 'block' : 'none';
+            if (el.style.display === 'block') llenarDestinoGantt();
+        }
+
+        // Selector "¿En qué proyecto la cargo?": proyectos existentes o uno nuevo con nombre propio
+        function llenarDestinoGantt(sugeridoId, nombreSugerido) {
+            const sel = document.getElementById('ganttDestino');
+            if (!sel) return;
+            const actual = sugeridoId !== undefined ? String(sugeridoId) : sel.value;
+            const opts = appData.proyectos.map(p => `<option value="${p.id}">${String(p.nombre).replace(/</g, '&lt;')}</option>`).join('');
+            sel.innerHTML = opts + '<option value="nuevo">➕ Proyecto nuevo…</option>';
+            sel.value = [...sel.options].some(o => o.value === actual) ? actual : 'nuevo';
+            if (nombreSugerido !== undefined) document.getElementById('ganttDestinoNombre').value = nombreSugerido;
+            cambioDestinoGantt();
+        }
+
+        function cambioDestinoGantt() {
+            const sel = document.getElementById('ganttDestino');
+            const inp = document.getElementById('ganttDestinoNombre');
+            if (!sel || !inp) return;
+            inp.style.display = sel.value === 'nuevo' ? 'block' : 'none';
+        }
+
+        // Lee el archivo/texto y propone destino: si ya existe un proyecto con ese nombre, lo marca; si no, "nuevo" con el nombre del archivo
+        function prepararImportacionGantt() {
+            let payload;
+            try { payload = JSON.parse(document.getElementById('ganttImportText').value.trim()); } catch (e) { return false; }
+            if (!payload || !payload.proyecto || !payload.proyecto.nombre) return false;
+            const igual = appData.proyectos.find(p => p.nombre === payload.proyecto.nombre);
+            llenarDestinoGantt(igual ? igual.id : 'nuevo', igual ? '' : payload.proyecto.nombre);
+            return true;
         }
 
         function cargarArchivoGantt(event) {
@@ -3527,7 +3562,13 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('ganttImportText').value = e.target.result;
-                importarGantt();
+                if (prepararImportacionGantt()) {
+                    resultado.style.color = 'var(--green)';
+                    resultado.textContent = 'Archivo listo. Elige el proyecto y presiona Importar.';
+                } else {
+                    resultado.style.color = '#e53935';
+                    resultado.textContent = 'No pude leer el archivo: revisa que sea una carta Gantt .json.';
+                }
             };
             reader.onerror = function() {
                 resultado.style.color = '#e53935';
@@ -3553,11 +3594,26 @@
                 return;
             }
 
-            let proyecto = appData.proyectos.find(p => p.nombre === payload.proyecto.nombre);
+            const destino = document.getElementById('ganttDestino')?.value;
+            let proyecto = null;
+            let nombreProyecto = payload.proyecto.nombre;
+            if (destino && destino !== 'nuevo') {
+                proyecto = appData.proyectos.find(p => String(p.id) === destino) || null;
+            } else if (destino === 'nuevo') {
+                nombreProyecto = (document.getElementById('ganttDestinoNombre').value || '').trim();
+                if (!nombreProyecto) {
+                    resultado.style.color = '#e53935';
+                    resultado.textContent = 'Escribe un nombre para el proyecto nuevo.';
+                    return;
+                }
+                proyecto = appData.proyectos.find(p => p.nombre === nombreProyecto) || null;
+            } else {
+                proyecto = appData.proyectos.find(p => p.nombre === payload.proyecto.nombre);
+            }
             if (!proyecto) {
                 proyecto = {
                     id: Date.now(),
-                    nombre: payload.proyecto.nombre,
+                    nombre: nombreProyecto,
                     smart: { especifica: '', medible: '', alcanzable: '', relevante: '', tiempo: '' },
                     fechaLimite: payload.proyecto.fechaLimite || '',
                     creado: new Date().toISOString()
@@ -3708,6 +3764,7 @@
             resultado.textContent = (eliminadasPrevias > 0
                 ? `✓ Listo: se reemplazó la carta Gantt (${eliminadasPrevias} actividades anteriores), ${creadas} cargadas en "${proyecto.nombre}".`
                 : `✓ Listo: ${creadas} actividades nuevas, ${actualizadas} actualizadas en "${proyecto.nombre}".`) + extra;
+            llenarDestinoGantt(proyecto.id);
             const chkReemplazar = document.getElementById('ganttReemplazar');
             if (chkReemplazar) chkReemplazar.checked = false;
         }
