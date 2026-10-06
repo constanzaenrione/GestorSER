@@ -8,7 +8,8 @@
     <meta name="apple-mobile-web-app-title" content="Agenda SER">
     <meta name="theme-color" content="#4B168E">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon-180.png">
     <title>Agenda SER</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -1037,7 +1038,8 @@
         <div id="rutinaPoder" class="view">
             <div class="card">
                 <h2 class="card-title">🌅 Rutina de Poder</h2>
-                <p style="font-size:0.85rem; color:#666; margin-bottom:1rem;">Tu ritual personal para volver a ti. Cada persona puede crear su propia rutina, con sus pasos y su horario.</p>
+                <p style="font-size:0.85rem; color:#666; margin-bottom:0.75rem;">Tu ritual para volver a ti. Te dejé uno de ejemplo: edítalo con tus propias frases, pasos y horario.</p>
+                <input type="text" id="rutinaNombreUsuario" class="form-input" placeholder="Escribe tu nombre para personalizar tu ritual" onchange="guardarNombreUsuario()" style="width:100%; margin-bottom:0.75rem;">
                 <button class="btn btn-primary" onclick="abrirModalRutinaPoder()">+ Nueva Rutina de Poder</button>
                 <div id="listaRutinasPoder"></div>
             </div>
@@ -1271,11 +1273,11 @@
                 <h2 class="modal-title" id="tituloModalActividad">Nueva Actividad</h2>
                 <button class="close-btn" onclick="cerrarModal('modalActividad')">&times;</button>
             </div>
-            <form id="formActividad" onsubmit="guardarActividad(event)">
+            <form id="formActividad" onsubmit="guardarActividad(event)" novalidate>
                 <input type="hidden" id="actividadId">
                 <div class="form-group">
-                    <label class="form-label">Proyecto *</label>
-                    <select class="form-select" id="actividadProyecto" required onchange="actualizarAreasSugeridas()"></select>
+                    <label class="form-label">Proyecto <span style="font-weight:400; color:#888; font-size:0.85rem;">(opcional)</span></label>
+                    <select class="form-select" id="actividadProyecto" onchange="actualizarAreasSugeridas()"></select>
                 </div>
 
                 <div class="form-group">
@@ -1302,7 +1304,7 @@
                 <div class="form-group">
                     <label class="form-label">Duración *</label>
                     <div style="display:flex; gap:0.5rem;">
-                        <input type="number" step="1" min="1" class="form-input" id="actividadDuracion" required style="flex:1;">
+                        <input type="number" step="any" min="0" class="form-input" id="actividadDuracion" style="flex:1;" inputmode="decimal">
                         <select class="form-select" id="actividadUnidad" style="width:90px;">
                             <option value="h">h</option>
                             <option value="min">min</option>
@@ -1437,7 +1439,7 @@
                 <div class="form-group">
                     <label class="form-label">Duración *</label>
                     <div style="display:flex; gap:0.5rem;">
-                        <input type="number" step="1" min="1" class="form-input" id="habitoDuracion" required style="flex:1;">
+                        <input type="number" step="any" min="0.01" class="form-input" id="habitoDuracion" required style="flex:1;" inputmode="decimal">
                         <select class="form-select" id="habitoUnidad" style="width:90px;">
                             <option value="min">min</option>
                             <option value="h">h</option>
@@ -1606,17 +1608,19 @@
                     <input type="time" class="form-input" id="rutinaPoderHora">
                 </div>
 
-                <h3 style="color: var(--purple); margin: 1.5rem 0 0.75rem;">Pasos de tu rutina</h3>
+                <h3 style="color: var(--purple); margin: 1.5rem 0 0.25rem;">Pasos de tu rutina</h3>
+                <p style="font-size:0.78rem; color:#888; margin-bottom:0.6rem;">Toca cualquier texto para editarlo. Con ▲▼ cambias el orden.</p>
                 <div id="listaPasosTemp"></div>
 
-                <div class="smart-section" style="margin-top:0.5rem;">
+                <p style="font-size:0.8rem; color:var(--purple); font-weight:600; margin:0.9rem 0 0.25rem;">+ Agregar un paso nuevo</p>
+                <div class="smart-section" style="margin-top:0.25rem;">
                     <div class="ritual-field">
                         <label>Título del paso</label>
                         <input type="text" class="form-input" id="pasoTempTitulo" placeholder="Ej: Vuelvo a mí">
                     </div>
                     <div class="ritual-field">
                         <label>Contenido</label>
-                        <textarea class="form-textarea" id="pasoTempContenido" placeholder="Escribe aquí las frases o instrucciones de este paso..."></textarea>
+                        <textarea class="form-textarea" id="pasoTempContenido" placeholder="Escribe aquí las frases de este paso. Tip: {nombre} se reemplaza por tu nombre."></textarea>
                     </div>
                     <button type="button" class="btn btn-secondary btn-small" onclick="agregarPasoTemp()">+ Agregar paso</button>
                 </div>
@@ -1715,13 +1719,48 @@
 
         // RUTINA DE PODER (rutina personal, cada usuario puede crear la suya)
         const RUTINA_PODER_DEFAULT = [
-            { id: 1, nombre: 'Ritual de Poder: Volver a Mí', hora: '07:00', pasos: [
-                { id: 1, titulo: 'Vuelvo a mí', contenido: 'Realiza la respiración 4-7-8 tres veces.\nInhalo presencia.\nReconozco quién soy.\nSuelto todo lo que no soy.' },
-                { id: 2, titulo: 'Recuerdo quién soy', contenido: 'Yo soy Constanza y recuerdo que soy…\n\n• Soy una creadora consciente de mi realidad.\n• Soy suficiente exactamente como soy.\n• Soy amor.\n• Soy abundancia.\n• Soy prosperidad.\n• Soy una mujer valiosa.\n• Soy creativa y siempre encuentro soluciones.\n• Soy inteligente.\n• Soy capaz.\n• Soy alegre.\n• Soy feliz.\n• Soy apasionada por la vida, por mi propósito y por Fernando.\n• Soy una mujer increíble.\n• Soy una mujer que inspira a otras mujeres.\n• Soy una mujer que reconoce su valor.\n• Soy una mujer que siempre logra lo que se propone.\n• Soy una mujer que avanza cada día hacia sus metas.\n• Soy una mujer que confía profundamente en sí misma.\n• Soy una mujer que honra y cuida su cuerpo con amor.\n• Soy una mujer que administra su dinero con sabiduría.\n• Soy una mujer que genera abundancia para ella y para quienes la rodean.\n• Soy una mujer que comparte cada día su sabiduría con el mundo.\n• Soy una mujer que recibe con facilidad todo lo bueno que Dios tiene preparado para ella.\n• Soy una mujer rodeada de amor, que fortalece cada día los lazos con las personas que ama.\n• Soy una mujer que vive con paz, gratitud y propósito.\n\nHoy me comprometo a elegir los pensamientos, las emociones y las acciones que expresen, cada vez con mayor libertad, quién realmente soy.' },
-                { id: 3, titulo: 'Elijo las verdades desde las que viviré hoy', contenido: 'Hoy recuerdo que:\n\n• Compartir mi sabiduría transforma vidas.\n• Mi propósito crea prosperidad para mí y para quienes me rodean.\n• Es seguro para mí recibir abundancia.\n• Mientras más crezco, más inspiro y más personas se benefician.\n• El dinero amplifica el amor, la generosidad y el impacto que ya existen en mí.\n• Es seguro para mí tener éxito, el éxito también me permite fortalecer los lazos con las personas que amo.\n• Mis ingresos crecen como consecuencia del valor que comparto con el mundo.\n• Dios abre para mí las puertas, las personas y las oportunidades perfectas.\n• Hoy recibiré más de lo que imaginé.' },
-                { id: 4, titulo: 'Confío y recibo', contenido: 'Respira profundamente. Luego di:\n\nGracias Dios.\nGracias porque ya estás obrando incluso antes de que pueda verlo.\nGracias porque provees todo lo que necesito en el momento perfecto.\nHoy abro mi mente, mi corazón y mi vida para recibir tu abundancia.\nMuéstrame una señal clara de que me estás guiando.\nEstoy presente.\nEstoy abierta.\nEstoy lista.\nConfío plenamente en Ti.\n\nGracias, gracias, gracias.' }
+            { id: 1, nombre: 'Mi Ritual de Poder', hora: '07:00', pasos: [
+                { id: 1, titulo: 'Vuelvo a mí', contenido: 'Respiro 4-7-8 tres veces.\nInhalo presencia.\nReconozco quién soy.\nSuelto lo que no soy.' },
+                { id: 2, titulo: 'Recuerdo quién soy', contenido: 'Yo soy {nombre} y recuerdo que…\n\n• Soy suficiente exactamente como soy.\n• Soy capaz e inteligente.\n• Soy amor y abundancia.\n• Encuentro soluciones con creatividad.\n• Confío en mí.\n• Cuido mi cuerpo y mi energía con amor.\n• Avanzo cada día hacia mis metas.\n\nHoy elijo pensamientos, emociones y acciones que expresen quién realmente soy.' },
+                { id: 3, titulo: 'Elijo mis verdades de hoy', contenido: 'Hoy recuerdo que:\n\n• Compartir lo que sé transforma vidas.\n• Es seguro para mí recibir abundancia.\n• Mientras más crezco, más inspiro.\n• Mis ingresos crecen con el valor que comparto.\n• Hoy recibo más de lo que imaginé.' },
+                { id: 4, titulo: 'Confío y recibo', contenido: 'Respiro profundo y digo:\n\nGracias por todo lo que ya tengo.\nGracias por lo que viene en camino.\nHoy abro mi mente y mi corazón para recibir.\nEstoy presente. Estoy en calma.\nConfío en el proceso.\n\nGracias, gracias, gracias.' }
             ], creado: '2025-01-01T00:00:00.000Z' }
         ];
+
+        // Huella del ritual anterior (sin guardar su texto): sirve para reconocer copias sin modificar
+        const RUTINA_PODER_HUELLA_ANTERIOR = 1122327068;
+        function huellaRutinaPoder(r) {
+            const t = (r.nombre || '') + '¦' + (r.pasos || []).map(p => (p.titulo || '') + '¦' + (p.contenido || '')).join('¦¦');
+            let h = 5381;
+            for (let i = 0; i < t.length; i++) { h = ((h << 5) + h + t.charCodeAt(i)) | 0; }
+            return h;
+        }
+        // Cambia al ritual nuevo SOLO si la persona nunca lo modificó. Conserva su horario. No toca nada más.
+        function migrarRutinaPoder(datos) {
+            if (!datos || !Array.isArray(datos.rutinasPoder)) return false;
+            let cambio = false;
+            datos.rutinasPoder = datos.rutinasPoder.map(r => {
+                if (r && huellaRutinaPoder(r) === RUTINA_PODER_HUELLA_ANTERIOR) {
+                    cambio = true;
+                    const base = JSON.parse(JSON.stringify(RUTINA_PODER_DEFAULT[0]));
+                    return { ...base, id: r.id, hora: r.hora || base.hora, creado: r.creado || base.creado };
+                }
+                return r;
+            });
+            return cambio;
+        }
+        function textoRutina(t) {
+            const nombre = (appData.config && appData.config.nombreUsuario || '').trim();
+            return String(t || '').replace(/\{nombre\}/g, nombre || '[tu nombre]');
+        }
+        function guardarNombreUsuario() {
+            const el = document.getElementById('rutinaNombreUsuario');
+            if (!el) return;
+            if (!appData.config) appData.config = {};
+            appData.config.nombreUsuario = el.value.trim();
+            guardarDatos();
+            renderizarRutinasPoder();
+        }
 
         const RUTINA_COLORES = ['#F9A825', '#4B168E', '#43A047', '#1E88E5', '#D81B60', '#00897B', '#EF6C00', '#6A1B9A'];
 
@@ -1872,7 +1911,7 @@
         // INICIALIZACIÓN
         function init() {
             cargarDatos();
-            const hoy = new Date().toISOString().split('T')[0];
+            const hoy = hoyLocal();
             document.getElementById('fechaAgenda').value = hoy;
             actualizarSelectsCreencias();
             actualizarSelectProyectos();
@@ -1972,7 +2011,7 @@
             if (id) {
                 const a = appData.actividades.find(ac => ac.id === id);
                 document.getElementById('actividadId').value = a.id;
-                document.getElementById('actividadProyecto').value = a.proyectoId;
+                document.getElementById('actividadProyecto').value = (a.proyectoId == null ? '' : a.proyectoId);
                 document.getElementById('actividadArea').value = a.area || '';
                 document.getElementById('actividadNombre').value = a.nombre;
                 document.getElementById('actividadCreencia').value = a.creencia || '';
@@ -2205,12 +2244,19 @@
             renderizarSubtareasTemp();
         }
 
+        // Fecha/hora local en formato 'YYYY-MM-DDTHH:mm' (sin convertir a otro huso horario)
+        function fechaHoraLocal(d) {
+            const p2 = n => String(n).padStart(2, '0');
+            return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+        }
+        function hoyLocal() { return fechaHoraLocal(new Date()).slice(0, 10); }
+
         function ajustarHoraActividad(id, minutos) {
             const a = appData.actividades.find(a => a.id === id);
             if (!a) return;
             const fecha = new Date(a.fecha);
             fecha.setMinutes(fecha.getMinutes() + minutos);
-            a.fecha = fecha.toISOString().slice(0, 16);
+            a.fecha = fechaHoraLocal(fecha);
             guardarDatos();
             renderizarAgenda();
         }
@@ -2222,7 +2268,7 @@
             if (!s || !s.fecha) return;
             const fecha = new Date(s.fecha);
             fecha.setDate(fecha.getDate() + dias);
-            s.fecha = fecha.toISOString().slice(0, 16);
+            s.fecha = fechaHoraLocal(fecha);
             guardarDatos();
             renderizarAgenda();
         }
@@ -2234,7 +2280,7 @@
             if (!s || !s.fecha) return;
             const fecha = new Date(s.fecha);
             fecha.setMinutes(fecha.getMinutes() + minutos);
-            s.fecha = fecha.toISOString().slice(0, 16);
+            s.fecha = fechaHoraLocal(fecha);
             guardarDatos();
             renderizarAgenda();
         }
@@ -2384,7 +2430,7 @@
         function actualizarSelectProyectos() {
             const select = document.getElementById('actividadProyecto');
             if (!select) return;
-            select.innerHTML = '<option value="">Selecciona</option>' +
+            select.innerHTML = '<option value="">Sin proyecto</option>' +
                 appData.proyectos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
         }
 
@@ -2403,8 +2449,19 @@
             errDiv.style.display = 'none';
 
             const id = document.getElementById('actividadId').value;
-            const duracion = parseFloat(document.getElementById('actividadDuracion').value) || 0;
+            const duracion = parseFloat(String(document.getElementById('actividadDuracion').value).replace(',', '.')) || 0;
             const unidad = document.getElementById('actividadUnidad').value;
+
+            // Avisos visibles (en el celular los avisos automáticos del navegador no se ven)
+            const faltantes = [];
+            if (!document.getElementById('actividadNombre').value.trim()) faltantes.push('el nombre');
+            if (!(duracion > 0)) faltantes.push('la duración (mayor que 0)');
+            if (faltantes.length) {
+                errDiv.innerHTML = '<strong>⚠️ Falta completar:</strong> ' + faltantes.join(' y ') + '.';
+                errDiv.style.display = 'block';
+                errDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                return;
+            }
 
             // Validar coherencia de tiempos si hay subtareas con duración definida
             if (subtareasTemp.length > 0 && duracion > 0) {
@@ -2430,9 +2487,9 @@
             }
 
             const ritualActVal = document.getElementById('actividadRitual').value;
-            const actividad = {
+            let actividad = {
                 id: id ? parseInt(id) : Date.now(),
-                proyectoId: parseInt(document.getElementById('actividadProyecto').value),
+                proyectoId: document.getElementById('actividadProyecto').value ? parseInt(document.getElementById('actividadProyecto').value) : null,
                 area: document.getElementById('actividadArea').value.trim(),
                 nombre: document.getElementById('actividadNombre').value,
                 creencia: document.getElementById('actividadCreencia').value,
@@ -2450,6 +2507,12 @@
                 color: id ? (appData.actividades.find(a => a.id === parseInt(id))?.color || null) : null,
                 creado: id ? (appData.actividades.find(a => a.id === parseInt(id))?.creado || new Date().toISOString()) : new Date().toISOString()
             };
+
+            if (id) {
+                // Conserva lo que el formulario no muestra (clave de la carta Gantt, fechas de completado, etc.)
+                const existente = appData.actividades.find(a => a.id === parseInt(id));
+                if (existente) actividad = { ...existente, ...actividad };
+            }
 
             const solapadas = actividad.fecha ? detectarSolapamiento(actividad.fecha, actividad.duracion, actividad.unidad, id ? parseInt(id) : null) : [];
             if (solapadas.length > 0) {
@@ -2671,7 +2734,7 @@
                 nombre: document.getElementById('habitoNombre').value,
                 frecuencia: frecuencia,
                 diasSemana: diasSemana,
-                duracion: parseInt(document.getElementById('habitoDuracion').value),
+                duracion: parseFloat(String(document.getElementById('habitoDuracion').value).replace(',', '.')),
                 unidad: document.getElementById('habitoUnidad').value,
                 hora: document.getElementById('habitoHora').value,
                 modo: document.querySelector('input[name="habitoModo"]:checked')?.value || 'agendado',
@@ -2872,21 +2935,26 @@
                 c.innerHTML = '<p style="color:#aaa; font-size:0.85rem; margin-bottom:0.5rem;">Aún no agregas pasos a esta rutina.</p>';
                 return;
             }
+            const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             c.innerHTML = pasosTemp.map((p, i) => `
-                <div style="background:var(--lavender-light); border-radius:8px; padding:0.6rem 0.75rem; margin-bottom:0.5rem;">
-                    <div style="display:flex; justify-content:space-between; align-items:start; gap:6px;">
-                        <div style="flex:1; min-width:0;">
-                            <strong style="color:var(--purple); font-size:0.85rem;">${i + 1}. ${p.titulo}</strong>
-                            <div style="font-size:0.8rem; color:#555; white-space:pre-wrap; margin-top:2px;">${p.contenido}</div>
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0;">
+                <div style="background:var(--lavender-light); border-radius:8px; padding:0.6rem 0.75rem; margin-bottom:0.6rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:0.4rem;">
+                        <strong style="color:var(--purple); font-size:0.85rem; flex-shrink:0;">Paso ${i + 1}</strong>
+                        <div style="display:flex; gap:4px; flex-shrink:0;">
                             <button type="button" onclick="moverPasoTemp(${i},-1)" ${i === 0 ? 'disabled' : ''} style="border:none; background:${i === 0 ? '#eee' : 'var(--lavender)'}; border-radius:5px; width:34px; height:30px; font-size:0.8rem; cursor:${i === 0 ? 'default' : 'pointer'};">▲</button>
                             <button type="button" onclick="moverPasoTemp(${i},1)" ${i === pasosTemp.length - 1 ? 'disabled' : ''} style="border:none; background:${i === pasosTemp.length - 1 ? '#eee' : 'var(--lavender)'}; border-radius:5px; width:34px; height:30px; font-size:0.8rem; cursor:${i === pasosTemp.length - 1 ? 'default' : 'pointer'};">▼</button>
                             <button type="button" class="btn btn-delete btn-small" onclick="eliminarPasoTemp(${i})" style="width:34px; height:30px; padding:0;">×</button>
                         </div>
                     </div>
+                    <input type="text" class="form-input" value="${esc(p.titulo)}" oninput="editarPasoTemp(${i}, 'titulo', this.value)" placeholder="Título del paso" style="width:100%; margin-bottom:0.4rem; font-weight:600;">
+                    <textarea class="form-textarea" rows="5" oninput="editarPasoTemp(${i}, 'contenido', this.value)" placeholder="Texto del paso" style="width:100%; min-height:110px;">${esc(p.contenido)}</textarea>
                 </div>
             `).join('');
+        }
+
+        // Guarda lo que escribes en un paso sin redibujar (así no se pierde el cursor)
+        function editarPasoTemp(idx, campo, valor) {
+            if (pasosTemp[idx]) pasosTemp[idx][campo] = valor;
         }
 
         function abrirModalRutinaPoder(id = null) {
@@ -2912,6 +2980,9 @@
 
         function guardarRutinaPoder(e) {
             e.preventDefault();
+            const tPend = document.getElementById('pasoTempTitulo').value.trim();
+            const cPend = document.getElementById('pasoTempContenido').value.trim();
+            if (tPend || cPend) agregarPasoTemp();
             if (pasosTemp.length === 0) {
                 alert('Agrega al menos un paso a tu rutina antes de guardar.');
                 return;
@@ -2956,6 +3027,8 @@
         function renderizarRutinasPoder() {
             const lista = document.getElementById('listaRutinasPoder');
             if (!lista) return;
+            const campoNombre = document.getElementById('rutinaNombreUsuario');
+            if (campoNombre && document.activeElement !== campoNombre) campoNombre.value = (appData.config && appData.config.nombreUsuario) || '';
             if (!appData.rutinasPoder || appData.rutinasPoder.length === 0) {
                 lista.innerHTML = '<p style="text-align: center; color: #666; margin-top: 2rem;">Aún no tienes una Rutina de Poder. ¡Crea la tuya!</p>';
                 return;
@@ -2967,7 +3040,7 @@
                     <div class="ritual-header" onclick="toggleRutinaPoder(${r.id})">
                         <div class="ritual-header-left">
                             <span class="ritual-badge" style="background:${color};">🌅</span>
-                            <strong>${r.nombre}</strong>
+                            <strong>${textoRutina(r.nombre)}</strong>
                             ${r.hora ? `<small style="color:#666; font-size:0.8rem;">⏰ ${r.hora}</small>` : ''}
                         </div>
                         <div style="display:flex; gap:0.5rem; align-items:center;">
@@ -2979,8 +3052,8 @@
                     <div class="ritual-detalle" id="rutina-detalle-${r.id}" style="display:none;">
                         ${(r.pasos || []).map((p, i) => `
                             <div style="background: var(--lavender-light); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; border-left: 3px solid ${color};">
-                                <strong style="color: var(--purple); font-size:0.85rem;">${i + 1}. ${p.titulo}</strong>
-                                <div style="font-size:0.88rem; white-space:pre-wrap; margin-top:4px;">${p.contenido}</div>
+                                <strong style="color: var(--purple); font-size:0.85rem;">${i + 1}. ${textoRutina(p.titulo)}</strong>
+                                <div style="font-size:0.88rem; white-space:pre-wrap; margin-top:4px;">${textoRutina(p.contenido)}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -3009,14 +3082,14 @@
 
         function cambiarDiaPlanificador(delta) {
             const input = document.getElementById('fechaPlanificador');
-            const f = new Date((input.value || new Date().toISOString().split('T')[0]) + 'T00:00:00');
+            const f = new Date((input.value || hoyLocal()) + 'T00:00:00');
             f.setDate(f.getDate() + delta);
             input.value = f.toISOString().split('T')[0];
             renderizarPlanificador();
         }
 
         function irHoyPlanificador() {
-            document.getElementById('fechaPlanificador').value = new Date().toISOString().split('T')[0];
+            document.getElementById('fechaPlanificador').value = hoyLocal();
             renderizarPlanificador();
         }
 
@@ -3073,7 +3146,7 @@
         function renderizarPlanificador() {
             const input = document.getElementById('fechaPlanificador');
             if (!input) return;
-            if (!input.value) input.value = new Date().toISOString().split('T')[0];
+            if (!input.value) input.value = hoyLocal();
             const fechaStr = input.value;
             const fechaDia = new Date(fechaStr + 'T00:00:00');
             const label = document.getElementById('planificadorFechaLabel');
@@ -3300,7 +3373,7 @@
             document.getElementById('cargaRapidaSinProyecto').style.display = sinProyectos ? 'block' : 'none';
             document.getElementById('cargaRapidaForm').style.display = sinProyectos ? 'none' : 'block';
             if (!sinProyectos && !document.getElementById('crFecha').value) {
-                document.getElementById('crFecha').value = new Date().toISOString().split('T')[0];
+                document.getElementById('crFecha').value = hoyLocal();
                 document.getElementById('crHora').value = '09:00';
                 document.getElementById('crDuracion').value = 15;
             }
@@ -3324,7 +3397,7 @@
             renderizarGantt();
             document.getElementById('cargaRapidaSinProyecto').style.display = 'none';
             document.getElementById('cargaRapidaForm').style.display = 'block';
-            document.getElementById('crFecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('crFecha').value = hoyLocal();
             document.getElementById('crHora').value = '09:00';
             document.getElementById('crDuracion').value = 15;
             document.getElementById('crArea').focus();
@@ -3475,7 +3548,7 @@
         }
 
         let ganttSubvista = 'carta';
-        let ganttFechaRevision = new Date().toISOString().split('T')[0];
+        let ganttFechaRevision = hoyLocal();
         const GANTT_COLORES = ['#4B168E', '#A0740F', '#7C4DBC', '#C9932E', '#1E88E5', '#00897B'];
 
         function filaActividadGanttHTML(a, color, atrasada) {
@@ -3532,7 +3605,7 @@
             renderizarGantt();
         }
         function irAHoyGantt() {
-            ganttFechaRevision = new Date().toISOString().split('T')[0];
+            ganttFechaRevision = hoyLocal();
             renderizarGantt();
         }
 
@@ -4058,7 +4131,7 @@
 
         function htmlPanelAtrasadas() {
             const ahora = new Date();
-            const nowStr = ahora.toISOString().slice(0,16);
+            const nowStr = fechaHoraLocal(ahora);
             const items = appData.actividades.filter(a => actividadEstaAtrasada(a))
                 .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
             if (items.length === 0) return '';
@@ -4099,7 +4172,7 @@
             const items = appData.actividades.filter(a => !a.fecha && !a.completada)
                 .sort((a, b) => new Date(a.creado || 0) - new Date(b.creado || 0));
             if (items.length === 0) return '';
-            const sugerida = (fechaSugeridaStr || new Date().toISOString().split('T')[0]) + 'T09:00';
+            const sugerida = (fechaSugeridaStr || hoyLocal()) + 'T09:00';
             return `<div style="background:#FFF8E1; border:1px solid #F9A825; border-radius:10px; padding:0.85rem; margin-bottom:1rem;">
                 <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; margin-bottom:0.5rem;" onclick="const b=this.nextElementSibling; b.style.display=b.style.display==='none'?'block':'none'; this.querySelector('.sa-chv').textContent=b.style.display==='none'?'▼':'▲';">
                     <span style="font-weight:700; color:#E65100; font-size:0.9rem;">📋 Por agendar (${items.length})</span>
@@ -4297,9 +4370,9 @@
             if (!act) return;
             const fecha = new Date(act.fecha);
             fecha.setDate(fecha.getDate() + deltaDias);
-            act.fecha = fecha.toISOString().slice(0, 16);
+            act.fecha = fechaHoraLocal(fecha);
             guardarDatos();
-            renderizarAgenda();
+            renderizarTodo();
         }
 
         function toggleRitualWeek(elemId) {
@@ -4691,7 +4764,7 @@
         function finalizarHabito(id) {
             const h = appData.habitos.find(h => h.id === id);
             if (!h) return;
-            const hoy = new Date().toISOString().split('T')[0];
+            const hoy = hoyLocal();
             const fecha = prompt('¿Desde qué fecha finaliza este hábito? (AAAA-MM-DD)', hoy);
             if (!fecha) return;
             h.fechaFin = fecha;
@@ -4781,7 +4854,7 @@
             }
 
             const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-            const hoyStr = hoy.toISOString().split('T')[0];
+            const hoyStr = fechaHoraLocal(hoy).slice(0,10);
 
             const cumplimientos = appData.habitos
                 .map(h => ({ habito: h, pct: calcularCumplimientoHabito(h, periodosDash) }))
@@ -4873,7 +4946,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'gestor_ser_datos_' + new Date().toISOString().split('T')[0] + '.json';
+            a.download = 'gestor_ser_datos_' + hoyLocal() + '.json';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -4937,6 +5010,9 @@
                 }
                 if (!datosParseados.diario) datosParseados.diario = [];
                 if (!datosParseados.rutinasPoder) datosParseados.rutinasPoder = RUTINA_PODER_DEFAULT;
+                if (migrarRutinaPoder(datosParseados)) {
+                    try { localStorage.setItem('appDataSER', JSON.stringify(datosParseados)); } catch (e) {}
+                }
                 Object.assign(appData, datosParseados);
             }
         }
@@ -5041,7 +5117,7 @@
         }
 
         // ===================== DIARIO =====================
-        let fechaDiarioActual = new Date().toISOString().split('T')[0];
+        let fechaDiarioActual = hoyLocal();
         let _estadoInternoSel = null;
         let _tensionCorpSel = null;
         let _tabDiarioActual = 'apertura';
@@ -5563,7 +5639,7 @@
             const blob = new Blob(['﻿' + header + rows], {type:'text/csv;charset=utf-8;'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = `diario-ser-${new Date().toISOString().split('T')[0]}.csv`;
+            a.href = url; a.download = `diario-ser-${hoyLocal()}.csv`;
             document.body.appendChild(a); a.click();
             document.body.removeChild(a); URL.revokeObjectURL(url);
         }
@@ -5582,7 +5658,7 @@
             if (!div) return;
             if (usuarioActual) {
                 div.innerHTML = `<div style="display:flex; align-items:center; gap:0.5rem;">
-                    <span style="color:rgba(255,255,255,0.85); font-size:0.78rem; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${usuarioActual.email}">☁️ ${usuarioActual.email}</span>
+                    <span style="color:rgba(255,255,255,0.85); font-size:0.78rem; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${nubeOk ? usuarioActual.email : 'No se pudo guardar en la nube: ' + nubeDetalle}">${nubeOk ? '☁️' : '⚠️ Sin guardar en la nube ·'} ${usuarioActual.email}</span>
                     <button onclick="cerrarSesion()" style="background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:20px; padding:4px 10px; font-size:0.75rem; cursor:pointer;">Salir</button>
                 </div>`;
             } else {
@@ -5642,6 +5718,7 @@
                     // Nube es más nueva: usar datos remotos
                     if (!remoto.rituales || remoto.rituales.length === 0) remoto.rituales = RITUALES_DEFAULT;
                     if (!remoto.rutinasPoder) remoto.rutinasPoder = RUTINA_PODER_DEFAULT;
+                    migrarRutinaPoder(remoto);
                     if (!remoto.config) remoto.config = { jornadaHoras: { 0: 0, 1: 8, 2: 8, 3: 8, 4: 8, 5: 8, 6: 0 }, jornadaRecreativa: { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 } };
                     if (!remoto.config.jornadaRecreativa) remoto.config.jornadaRecreativa = { 0: 0, 1: 4, 2: 4, 3: 4, 4: 4, 5: 6, 6: 6 };
                     Object.assign(appData, remoto);
@@ -5659,13 +5736,27 @@
 
         async function sincronizarHaciaSupabase() {
             if (!usuarioActual) return;
-            await sb.from('user_data').upsert({ user_id: usuarioActual.id, data: appData, updated_at: new Date().toISOString() });
+            try {
+                const { error } = await sb.from('user_data').upsert({ user_id: usuarioActual.id, data: appData, updated_at: new Date().toISOString() });
+                if (error) console.error('Error guardando en la nube:', error);
+                marcarEstadoNube(!error, error ? error.message : '');
+            } catch (e) {
+                console.error('Error guardando en la nube:', e);
+                marcarEstadoNube(false, e && e.message);
+            }
+        }
+
+        // Muestra arriba si el último guardado en la nube funcionó (☁️) o falló (⚠️)
+        let nubeOk = true, nubeDetalle = '';
+        function marcarEstadoNube(ok, detalle) {
+            nubeOk = ok; nubeDetalle = detalle || '';
+            actualizarHeaderAuth();
         }
 
         // Registrar Service Worker para PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/GestorSER/sw.js')
+                navigator.serviceWorker.register('./sw.js')
                     .catch(() => {});
             });
         }
