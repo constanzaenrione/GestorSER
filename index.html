@@ -1044,6 +1044,7 @@
                     <button class="toggle-btn" id="planifBtnModo" onclick="toggleModoPlanificador()" style="padding:0.4rem 0.8rem; font-size:0.78rem;">Ver día completo (00:00–23:59)</button>
                 </div>
                 <div id="planifAvisoFuera" style="display:none; text-align:center; font-size:0.75rem; color:#E65100; margin-bottom:0.5rem;"></div>
+                <div id="planifHabitosSinHora" style="display:none; font-size:0.75rem; color:#666; margin-bottom:0.6rem; text-align:center;"></div>
 
                 <div id="planificadorScroll" style="position:relative; overflow-y:auto; border:1px solid var(--lavender); border-radius:10px; background:white;">
                     <div id="planificadorTrack" style="position:relative;"></div>
@@ -1464,6 +1465,7 @@
 
                 <div id="actividadError" style="display:none; background:#ffebee; border:1px solid #ef9a9a; border-radius:8px; padding:0.75rem; margin-bottom:0.75rem; color:#c62828; font-size:0.88rem; line-height:1.5;"></div>
                 <button type="submit" class="btn btn-primary">Guardar</button>
+                <button type="button" class="btn btn-delete" id="btnEliminarActividadModal" style="display:none; margin-left:0.5rem;" onclick="eliminarActividadDesdeModal()">🗑️ Eliminar</button>
             </form>
         </div>
     </div>
@@ -1541,8 +1543,9 @@
                 </div>
 
                 <div class="form-group" id="grupoHoraHabito">
-                    <label class="form-label">Hora</label>
+                    <label class="form-label">Hora (opcional)</label>
                     <input type="time" class="form-input" id="habitoHora">
+                    <small style="color:#888; display:block; margin-top:0.25rem;">Si la pones, el hábito aparece ordenado en la Agenda y en el Planificador. Si la dejas vacía, aparece al final del día.</small>
                 </div>
 
                 <div class="form-group">
@@ -2109,6 +2112,7 @@
                 subtareasTemp = a.subtareas ? [...a.subtareas] : [];
                 renderizarSubtareasTemp();
                 document.getElementById('tituloModalActividad').textContent = 'Editar Actividad';
+                const bEl = document.getElementById('btnEliminarActividadModal'); if (bEl) bEl.style.display = '';
             } else {
                 document.getElementById('actividadArea').value = '';
                 document.getElementById('actividadUnidad').value = 'h';
@@ -2116,6 +2120,7 @@
                 subtareasTemp = [];
                 renderizarSubtareasTemp();
                 document.getElementById('tituloModalActividad').textContent = 'Nueva Actividad';
+                const bEl = document.getElementById('btnEliminarActividadModal'); if (bEl) bEl.style.display = 'none';
             }
             actualizarAreasSugeridas();
             abrirModal('modalActividad');
@@ -2130,7 +2135,7 @@
                 document.getElementById('habitoFrecuencia').value = h.frecuencia;
                 document.getElementById('habitoDuracion').value = h.duracion;
                 document.getElementById('habitoUnidad').value = h.unidad || 'min';
-                document.getElementById('habitoHora').value = h.hora;
+                document.getElementById('habitoHora').value = h.hora || '';
                 document.getElementById('habitoFechaInicio').value = h.fechaInicio;
                 document.getElementById('habitoRecordatorio').checked = h.recordatorio || false;
                 document.getElementById('habitoHoraRecordatorio').value = h.horaRecordatorio || '';
@@ -2151,6 +2156,7 @@
                 document.getElementById('tituloModalHabito').textContent = 'Editar Hábito';
             } else {
                 document.getElementById('tituloModalHabito').textContent = 'Nuevo Hábito';
+                actualizarModoHabito();
             }
             abrirModal('modalHabito');
         }
@@ -2402,9 +2408,15 @@
             if (!confirm(`¿Eliminar la actividad "${a.nombre}"?`)) return;
             appData.actividades = appData.actividades.filter(a => a.id !== id);
             guardarDatos();
-            renderizarTodasActividades();
-            renderizarAgenda();
-            renderizarGantt();
+            renderizarTodo();
+        }
+
+        function eliminarActividadDesdeModal() {
+            const id = parseInt(document.getElementById('actividadId').value);
+            if (!id) return;
+            const antes = appData.actividades.length;
+            eliminarActividad(id);
+            if (appData.actividades.length < antes) cerrarModal('modalActividad');
         }
 
         function eliminarAreaGantt(proyectoId, area) {
@@ -2876,7 +2888,7 @@
                                     ${ritualBadge}
                                 </div>
                                 <p style="font-size:0.9rem; color:${finalizado ? '#aaa' : ''};">
-                                    🔄 ${frecuenciaTexto} · ⏱️ ${duracionTexto(h.duracion, h.unidad || 'min')} · ⏰ ${h.hora}<br>
+                                    🔄 ${frecuenciaTexto} · ⏱️ ${duracionTexto(h.duracion, h.unidad || 'min')} ${h.hora ? ' · ⏰ ' + h.hora : ' · sin hora'}<br>
                                     📅 Desde: ${new Date(h.fechaInicio + 'T00:00:00').toLocaleDateString('es-CL')}
                                     ${h.fechaFin ? ` hasta ${new Date(h.fechaFin + 'T00:00:00').toLocaleDateString('es-CL')}` : ''}
                                     ${proyecto ? `<br>🎯 ${proyecto.nombre}` : ''}
@@ -3199,7 +3211,7 @@
             });
 
             const bloques = [
-                ...habitosDia.map(h => ({
+                ...habitosDia.filter(h => h.hora).map(h => ({
                     tipo: 'habito', id: h.id, nombre: h.nombre,
                     inicio: getMinutosDelDia(h.hora),
                     duracion: Math.max(5, Math.round(duracionAHoras(h.duracion, h.unidad || 'min') * 60)),
@@ -3294,6 +3306,27 @@
             }).join('');
 
             track.innerHTML = horasHTML + lineaAhoraHTML + bloquesHTML;
+
+            const sinHoraEl = document.getElementById('planifHabitosSinHora');
+            if (sinHoraEl) {
+                const sinHora = appData.habitos.filter(h => {
+                    if (h.modo === 'innegociable' || h.hora) return false;
+                    const inicio = new Date(h.fechaInicio + 'T00:00:00');
+                    if (fechaDia < inicio) return false;
+                    if (h.fechaFin && new Date(h.fechaFin + 'T23:59:59') < fechaDia) return false;
+                    if (h.frecuencia === 'diaria') return true;
+                    if (h.frecuencia === 'semanal') return (h.diasSemana || []).includes(fechaDia.getDay());
+                    if (h.frecuencia === 'mensual') return fechaDia.getDate() === inicio.getDate();
+                    return false;
+                });
+                if (sinHora.length) {
+                    sinHoraEl.style.display = 'block';
+                    sinHoraEl.innerHTML = '⚡ Hábitos sin hora (toca uno para ponerle hora): ' + sinHora.map(h =>
+                        `<button type="button" onclick="abrirModalHabito(${h.id})" style="border:1px solid var(--gold); background:white; color:#8a6500; border-radius:12px; padding:2px 8px; margin:2px; font-size:0.72rem; cursor:pointer;">${String(h.nombre).replace(/</g,'&lt;')}</button>`).join('');
+                } else {
+                    sinHoraEl.style.display = 'none';
+                }
+            }
 
             const aviso = document.getElementById('planifAvisoFuera');
             if (aviso) {
@@ -4714,6 +4747,7 @@
             const esAtrasado = item => {
                 if (fecha.toDateString() !== ahora.toDateString()) return false;
                 if (item._tipo === 'habito') {
+                    if (!item.hora) return false;
                     const [h, m] = item.hora.split(':');
                     const t = new Date(); t.setHours(parseInt(h), parseInt(m), 0, 0);
                     return t < ahora && !(item.completados && item.completados[fechaStr]);
@@ -4746,7 +4780,7 @@
                                         ${ritualBtn}
                                         ${completadoHoy ? '<span class="badge badge-green">✓</span>' : ''}
                                         <strong>${h.nombre}</strong>
-                                        <span style="color:#666; font-size:0.85rem;">${h.hora} · ${duracionTexto(h.duracion, h.unidad || 'min')}</span>
+                                        <span style="color:#666; font-size:0.85rem;">${h.hora ? h.hora + ' · ' : ''}${duracionTexto(h.duracion, h.unidad || 'min')}</span>
                                     </div>
                                     <button class="btn btn-small ${completadoHoy ? 'btn-secondary' : 'btn-primary'}" onclick="event.stopPropagation(); toggleHabitoCompletado(${h.id}, '${fechaStr}')">
                                         ${completadoHoy ? 'Reabrir' : 'Completar'}
@@ -4826,6 +4860,7 @@
                                 </button>
                                 <button class="btn btn-edit btn-small" onclick="event.stopPropagation(); abrirModalActividad(${a.id})">Editar</button>
                                 <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); duplicarActividad(${a.id})">Duplicar</button>
+                                <button class="btn btn-delete btn-small" onclick="event.stopPropagation(); eliminarActividad(${a.id})">Eliminar</button>
                             </div>
                             <div style="display:flex; gap:0.4rem; margin-top:0.4rem; flex-wrap:wrap; align-items:center;">
                                 <span style="font-size:0.75rem; color:#888;">Mover:</span>
@@ -4915,7 +4950,7 @@
                             return `<div class="week-task-mini ${completado ? 'completada' : ''}" style="border-left-color:${color}; font-size:0.82rem; padding:0.6rem 0.75rem; margin-bottom:0.5rem;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
                                     <div style="flex:1; min-width:0;">
-                                        <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${completado ? 'text-decoration:line-through; color:#999;' : ''}">⚡ ${h.hora} &nbsp;${h.nombre}</div>
+                                        <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${completado ? 'text-decoration:line-through; color:#999;' : ''}">⚡ ${h.hora ? h.hora + ' &nbsp;' : ''}${h.nombre}</div>
                                         <div style="font-size:0.75rem; color:#888; margin-top:2px;">${duracionTexto(h.duracion, h.unidad||'min')}${completado ? ' · ✓ Completado' : ''}</div>
                                     </div>
                                     <div style="display:flex; gap:4px; flex-shrink:0; align-items:center;">
@@ -4985,6 +5020,7 @@
                                 <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0; align-items:flex-end;">
                                     <button style="border:none; background:${a.completada ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); toggleCompletada(${a.id})">${a.completada ? 'Reabrir' : 'Completar'}</button>
                                     <button style="border:1px solid var(--purple); background:white; color:var(--purple); border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); abrirModalActividad(${a.id})">Editar</button>
+                                    <button style="border:1px solid #c62828; background:white; color:#c62828; border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); eliminarActividad(${a.id})">Eliminar</button>
                                     <button style="border:1px solid #ccc; background:white; color:#666; border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); duplicarActividad(${a.id})">Duplicar</button>
                                 </div>
                             </div>
@@ -5030,6 +5066,7 @@
                                     <div style="font-size:0.72rem; color:#c62828; margin-top:2px;">📅 Programada: ${new Date(a.fecha).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
                                 </div>
                                 <button style="border:1px solid var(--purple); background:white; color:var(--purple); border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer; flex-shrink:0;" onclick="abrirModalActividad(${a.id})">✏️ Editar</button>
+                                <button style="border:1px solid #c62828; background:white; color:#c62828; border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer; flex-shrink:0;" onclick="event.stopPropagation(); eliminarActividad(${a.id})">🗑️</button>
                             </div>
                             <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
                                 <span style="font-size:0.72rem; color:#666; flex-shrink:0;">Completada el:</span>
@@ -5070,6 +5107,7 @@
                                 <div style="display:flex; gap:3px; flex-shrink:0;">
                                     <button style="border:none; background:#43A047; color:white; border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer;" title="Completar" onclick="toggleCompletada(${a.id})">✓ Listo</button>
                                     <button style="border:1px solid var(--purple); background:white; color:var(--purple); border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer;" onclick="abrirModalActividad(${a.id})">✏️ Editar</button>
+                                    <button style="border:1px solid #c62828; background:white; color:#c62828; border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer;" onclick="event.stopPropagation(); eliminarActividad(${a.id})">🗑️</button>
                                 </div>
                             </div>
                             <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
@@ -5379,7 +5417,7 @@
                             const color = ritual ? getRitualColor(h.ritualId) : 'var(--gold)';
                             return `<div class="week-task-mini ${completado ? 'completada' : ''}" style="border-left-color:${color}; ${ritual ? 'cursor:pointer;' : 'cursor:default;'}" ${ritual ? `onclick="verRitualModal(${h.ritualId})"` : ''}>
                                 <div style="display:flex; justify-content:space-between; align-items:center; gap:2px;">
-                                    <span style="flex:1; overflow:hidden;">⚡ ${h.hora} ${h.nombre} (${duracionTexto(h.duracion, h.unidad||'min')}) ${completado ? '✓' : ''}</span>
+                                    <span style="flex:1; overflow:hidden;">⚡ ${h.hora ? h.hora + ' ' : ''}${h.nombre} (${duracionTexto(h.duracion, h.unidad||'min')}) ${completado ? '✓' : ''}</span>
                                     <button style="border:none; background:${completado ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:4px; padding:1px 4px; font-size:0.6rem; cursor:pointer; flex-shrink:0;" onclick="event.stopPropagation(); toggleHabitoCompletado(${h.id},'${fechaDiaStr}')">${completado ? '↩' : '✓'}</button>
                                 </div>
                             </div>`;
