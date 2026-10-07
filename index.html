@@ -1135,6 +1135,7 @@
                     <button class="btn btn-secondary" onclick="mostrarCopiasLocales()">🕘 Copias automáticas de este aparato</button>
                 </div>
                 <p id="ultimoRespaldoTxt" style="font-size:0.78rem; color:#888; margin-bottom:0.5rem;"></p>
+                <button class="btn btn-secondary btn-small" id="btnRecordatorioRespaldo" onclick="alternarRecordatorioRespaldo()" style="margin-bottom:0.75rem;"></button>
                 <div id="copiasLocalesBox" style="display:none; margin-bottom:1.5rem;"></div>
                 <div style="margin-bottom:2rem;"></div>
 
@@ -1730,6 +1731,15 @@
     </div>
 
     <!-- Modal Ver Ritual -->
+    <div id="avisoRespaldo" style="display:none; position:fixed; left:12px; right:12px; bottom:12px; z-index:900; max-width:460px; margin:0 auto; background:#fff; border:2px solid var(--purple); border-radius:14px; padding:0.9rem 1rem; box-shadow:0 6px 24px rgba(0,0,0,0.25);">
+        <div id="avisoRespaldoTxt" style="font-size:0.88rem; color:#333; margin-bottom:0.6rem;"></div>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-small" onclick="exportarDatos()">💾 Respaldar ahora</button>
+            <button class="btn btn-secondary btn-small" onclick="posponerRecordatorioRespaldo()">Más adelante</button>
+            <button class="btn btn-secondary btn-small" onclick="desactivarRecordatorioRespaldo()">No recordarme</button>
+        </div>
+    </div>
+
     <div id="modalAuth" class="modal">
         <div class="modal-content" style="max-width:400px;">
             <div class="modal-header">
@@ -1742,14 +1752,14 @@
             </div>
             <div style="margin-bottom:1rem;">
                 <label class="form-label">Contraseña</label>
-                <input type="password" id="authPassword" class="form-input" placeholder="Mínimo 6 caracteres">
+                <input type="password" id="authPassword" class="form-input" placeholder="Tu contraseña">
             </div>
             <p id="authMensaje" style="font-size:0.85rem; margin-bottom:1rem; min-height:1.2em;"></p>
             <div style="display:flex; gap:0.75rem;">
                 <button class="btn btn-primary" style="flex:1;" onclick="iniciarSesion()">Iniciar sesión</button>
-                <button class="btn btn-secondary" style="flex:1;" onclick="registrarse()">Crear cuenta</button>
             </div>
-            <p style="font-size:0.78rem; color:#888; text-align:center; margin-top:1rem;">Tus datos se sincronizan en la nube y quedan disponibles en cualquier dispositivo.</p>
+            <p style="font-size:0.8rem; color:#6a4c93; text-align:center; margin-top:1rem;">🔒 El acceso es solo por invitación. Si aún no tienes tu cuenta, pídesela a quien te entregó la app.</p>
+            <p style="font-size:0.78rem; color:#888; text-align:center; margin-top:0.5rem;">Tus datos se sincronizan en la nube y quedan disponibles en cualquier dispositivo.</p>
         </div>
     </div>
 
@@ -5905,11 +5915,51 @@
             return ['proyectos', 'actividades', 'habitos', 'diario'].reduce((n, k) => n + (Array.isArray(d[k]) ? d[k].length : 0), 0);
         }
 
+        // ---- Recordatorio de respaldo (si pasan 7 días sin respaldar) ----
+        const DIAS_RECORDATORIO_RESPALDO = 7;
+        function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+        function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+        function revisarRecordatorioRespaldo() {
+            const box = document.getElementById('avisoRespaldo');
+            if (!box) return;
+            if (!lsGet('primerUsoSER')) lsSet('primerUsoSER', new Date().toISOString());
+            const btn = document.getElementById('btnRecordatorioRespaldo');
+            const apagado = lsGet('recordatorioRespaldoSER') === 'off';
+            if (btn) btn.textContent = apagado ? '🔔 Activar recordatorio de respaldo' : '🔕 Desactivar recordatorio de respaldo';
+            box.style.display = 'none';
+            if (apagado) return;
+            const hasta = lsGet('recordatorioRespaldoHasta');
+            if (hasta && new Date(hasta) > new Date()) return;
+            const ref = new Date(lsGet('ultimoRespaldoSER') || lsGet('primerUsoSER'));
+            const dias = Math.floor((Date.now() - ref.getTime()) / 86400000);
+            if (dias < DIAS_RECORDATORIO_RESPALDO) return;
+            document.getElementById('avisoRespaldoTxt').innerHTML = lsGet('ultimoRespaldoSER')
+                ? `💾 Hace <strong>${dias} días</strong> que no respaldas tus datos. ¿Quieres descargar una copia ahora?`
+                : `💾 Todavía no has descargado ningún respaldo de tus datos. ¿Quieres hacerlo ahora?`;
+            box.style.display = 'block';
+        }
+        function posponerRecordatorioRespaldo() {
+            lsSet('recordatorioRespaldoHasta', new Date(Date.now() + DIAS_RECORDATORIO_RESPALDO * 86400000).toISOString());
+            revisarRecordatorioRespaldo();
+        }
+        function desactivarRecordatorioRespaldo() {
+            lsSet('recordatorioRespaldoSER', 'off');
+            revisarRecordatorioRespaldo();
+            alert('Listo, no te volveré a recordar el respaldo. Puedes reactivarlo cuando quieras en Configuración → Datos.');
+        }
+        function alternarRecordatorioRespaldo() {
+            if (lsGet('recordatorioRespaldoSER') === 'off') { lsSet('recordatorioRespaldoSER', 'on'); lsSet('recordatorioRespaldoHasta', ''); }
+            else lsSet('recordatorioRespaldoSER', 'off');
+            revisarRecordatorioRespaldo();
+        }
+
         function actualizarTextoUltimoRespaldo() {
             const el = document.getElementById('ultimoRespaldoTxt');
             if (!el) return;
             let f = null;
             try { f = localStorage.getItem('ultimoRespaldoSER'); } catch (e) {}
+            revisarRecordatorioRespaldo();
             el.textContent = f ? 'Último respaldo descargado: ' + new Date(f).toLocaleString('es-CL') : 'Todavía no has descargado ningún respaldo en este aparato.';
         }
 
@@ -6649,21 +6699,8 @@
             msg.style.color = '#666';
             msg.textContent = 'Iniciando sesión...';
             const { error } = await sb.auth.signInWithPassword({ email, password });
-            if (error) { msg.style.color = 'var(--red)'; msg.textContent = error.message; return; }
+            if (error) { msg.style.color = 'var(--red)'; msg.textContent = /invalid login|credentials/i.test(error.message) ? 'Correo o contraseña incorrectos, o tu cuenta aún no fue activada.' : error.message; return; }
             cerrarModalAuth();
-        }
-
-        async function registrarse() {
-            const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('authPassword').value;
-            const msg = document.getElementById('authMensaje');
-            if (password.length < 6) { msg.style.color = 'var(--red)'; msg.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
-            msg.style.color = '#666';
-            msg.textContent = 'Creando cuenta...';
-            const { error } = await sb.auth.signUp({ email, password });
-            if (error) { msg.style.color = 'var(--red)'; msg.textContent = error.message; return; }
-            msg.style.color = 'var(--green)';
-            msg.textContent = 'Cuenta creada. Revisa tu correo para confirmar.';
         }
 
         async function cerrarSesion() {
