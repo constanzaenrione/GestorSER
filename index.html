@@ -760,7 +760,9 @@
             .gx-tabla td[data-l]::before{ content:attr(data-l); display:block; font-size:0.62rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#9a9a9a; margin-top:4px; }
             .gx-tabla td.gx-td-fecha, .gx-tabla td.gx-td-dia{ display:inline-block; margin-right:6px; font-size:0.9rem; }
         }
-    </style>
+            body.editando-textos, body.editando-textos * { cursor: text !important; }
+        body.editando-textos h1, body.editando-textos h2, body.editando-textos h3, body.editando-textos label, body.editando-textos button, body.editando-textos p, body.editando-textos th { outline: 1px dashed rgba(75,22,142,0.35); outline-offset: 1px; }
+</style>
 </head>
 <body>
     <div class="header">
@@ -933,6 +935,16 @@
                     <button type="button" class="btn btn-delete btn-small" onclick="eliminarCartaGanttProyecto()">🗑️ Eliminar carta Gantt</button>
                 </div>
 
+                <details style="margin-bottom:0.75rem; border:1px solid #e0d4f7; border-radius:10px; padding:0.5rem 0.75rem; background:#faf8fd;">
+                    <summary style="cursor:pointer; font-size:0.85rem; color:var(--purple); font-weight:600;">✏️ Personalizar los textos de mi carta Gantt</summary>
+                    <p style="font-size:0.82rem; color:#666; margin:0.5rem 0;">Cambia cualquier título, etiqueta o frase de la carta Gantt para que suene a ti. Activa el modo, toca el texto que quieras cambiar y escribe el tuyo. Se guarda en tu cuenta y puedes volver al original cuando quieras. Lo que escribes en tus etapas, actividades y días se edita con sus propios botones ✏️.</p>
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.6rem;">
+                        <button type="button" class="btn btn-primary btn-small" onclick="activarModoEditarTextos()">✏️ Editar textos de la carta</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="restaurarTodosLosTextos()">↩ Volver a los textos originales</button>
+                    </div>
+                    <div id="listaTextosPersonalizados"></div>
+                </details>
+
                 <div class="gx-tabs">
                     <button type="button" id="ganttTabMapa" class="btn btn-secondary btn-small" onclick="cambiarSubvistaGantt('mapa')">🗺️ Mapa</button>
                     <button type="button" id="ganttTabCarta" class="btn btn-small" onclick="cambiarSubvistaGantt('carta')" style="background:var(--purple); color:#fff;">📊 Carta Gantt</button>
@@ -1044,6 +1056,7 @@
                     <button class="toggle-btn" id="planifBtnModo" onclick="toggleModoPlanificador()" style="padding:0.4rem 0.8rem; font-size:0.78rem;">Ver día completo (00:00–23:59)</button>
                 </div>
                 <div id="planifAvisoFuera" style="display:none; text-align:center; font-size:0.75rem; color:#E65100; margin-bottom:0.5rem;"></div>
+                <div id="planifHabitosSinHora" style="display:none; font-size:0.75rem; color:#666; margin-bottom:0.6rem; text-align:center;"></div>
 
                 <div id="planificadorScroll" style="position:relative; overflow-y:auto; border:1px solid var(--lavender); border-radius:10px; background:white;">
                     <div id="planificadorTrack" style="position:relative;"></div>
@@ -1134,6 +1147,7 @@
                     <button class="btn btn-secondary" onclick="mostrarCopiasLocales()">🕘 Copias automáticas de este aparato</button>
                 </div>
                 <p id="ultimoRespaldoTxt" style="font-size:0.78rem; color:#888; margin-bottom:0.5rem;"></p>
+                <button class="btn btn-secondary btn-small" id="btnRecordatorioRespaldo" onclick="alternarRecordatorioRespaldo()" style="margin-bottom:0.75rem;"></button>
                 <div id="copiasLocalesBox" style="display:none; margin-bottom:1.5rem;"></div>
                 <div style="margin-bottom:2rem;"></div>
 
@@ -1464,6 +1478,7 @@
 
                 <div id="actividadError" style="display:none; background:#ffebee; border:1px solid #ef9a9a; border-radius:8px; padding:0.75rem; margin-bottom:0.75rem; color:#c62828; font-size:0.88rem; line-height:1.5;"></div>
                 <button type="submit" class="btn btn-primary">Guardar</button>
+                <button type="button" class="btn btn-delete" id="btnEliminarActividadModal" style="display:none; margin-left:0.5rem;" onclick="eliminarActividadDesdeModal()">🗑️ Eliminar</button>
             </form>
         </div>
     </div>
@@ -1541,8 +1556,9 @@
                 </div>
 
                 <div class="form-group" id="grupoHoraHabito">
-                    <label class="form-label">Hora</label>
+                    <label class="form-label">Hora (opcional)</label>
                     <input type="time" class="form-input" id="habitoHora">
+                    <small style="color:#888; display:block; margin-top:0.25rem;">Si la pones, el hábito aparece ordenado en la Agenda y en el Planificador. Si la dejas vacía, aparece al final del día.</small>
                 </div>
 
                 <div class="form-group">
@@ -1727,6 +1743,15 @@
     </div>
 
     <!-- Modal Ver Ritual -->
+    <div id="avisoRespaldo" style="display:none; position:fixed; left:12px; right:12px; bottom:12px; z-index:900; max-width:460px; margin:0 auto; background:#fff; border:2px solid var(--purple); border-radius:14px; padding:0.9rem 1rem; box-shadow:0 6px 24px rgba(0,0,0,0.25);">
+        <div id="avisoRespaldoTxt" style="font-size:0.88rem; color:#333; margin-bottom:0.6rem;"></div>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-small" onclick="exportarDatos()">💾 Respaldar ahora</button>
+            <button class="btn btn-secondary btn-small" onclick="posponerRecordatorioRespaldo()">Más adelante</button>
+            <button class="btn btn-secondary btn-small" onclick="desactivarRecordatorioRespaldo()">No recordarme</button>
+        </div>
+    </div>
+
     <div id="modalAuth" class="modal">
         <div class="modal-content" style="max-width:400px;">
             <div class="modal-header">
@@ -1739,14 +1764,14 @@
             </div>
             <div style="margin-bottom:1rem;">
                 <label class="form-label">Contraseña</label>
-                <input type="password" id="authPassword" class="form-input" placeholder="Mínimo 6 caracteres">
+                <input type="password" id="authPassword" class="form-input" placeholder="Tu contraseña">
             </div>
             <p id="authMensaje" style="font-size:0.85rem; margin-bottom:1rem; min-height:1.2em;"></p>
             <div style="display:flex; gap:0.75rem;">
                 <button class="btn btn-primary" style="flex:1;" onclick="iniciarSesion()">Iniciar sesión</button>
-                <button class="btn btn-secondary" style="flex:1;" onclick="registrarse()">Crear cuenta</button>
             </div>
-            <p style="font-size:0.78rem; color:#888; text-align:center; margin-top:1rem;">Tus datos se sincronizan en la nube y quedan disponibles en cualquier dispositivo.</p>
+            <p style="font-size:0.8rem; color:#6a4c93; text-align:center; margin-top:1rem;">🔒 El acceso es solo por invitación. Si aún no tienes tu cuenta, pídesela a quien te entregó la app.</p>
+            <p style="font-size:0.78rem; color:#888; text-align:center; margin-top:0.5rem;">Tus datos se sincronizan en la nube y quedan disponibles en cualquier dispositivo.</p>
         </div>
     </div>
 
@@ -1999,6 +2024,7 @@
             actualizarFiltrosProyectos();
             actualizarSelectsHabito();
             renderizarTodo();
+            iniciarTextosPersonalizados();
             actualizarTextoUltimoRespaldo();
             // Auth listener — se dispara al cargar y cuando el usuario inicia/cierra sesión
             sb.auth.onAuthStateChange((event, session) => {
@@ -2109,6 +2135,7 @@
                 subtareasTemp = a.subtareas ? [...a.subtareas] : [];
                 renderizarSubtareasTemp();
                 document.getElementById('tituloModalActividad').textContent = 'Editar Actividad';
+                const bEl = document.getElementById('btnEliminarActividadModal'); if (bEl) bEl.style.display = '';
             } else {
                 document.getElementById('actividadArea').value = '';
                 document.getElementById('actividadUnidad').value = 'h';
@@ -2116,6 +2143,7 @@
                 subtareasTemp = [];
                 renderizarSubtareasTemp();
                 document.getElementById('tituloModalActividad').textContent = 'Nueva Actividad';
+                const bEl = document.getElementById('btnEliminarActividadModal'); if (bEl) bEl.style.display = 'none';
             }
             actualizarAreasSugeridas();
             abrirModal('modalActividad');
@@ -2130,7 +2158,7 @@
                 document.getElementById('habitoFrecuencia').value = h.frecuencia;
                 document.getElementById('habitoDuracion').value = h.duracion;
                 document.getElementById('habitoUnidad').value = h.unidad || 'min';
-                document.getElementById('habitoHora').value = h.hora;
+                document.getElementById('habitoHora').value = h.hora || '';
                 document.getElementById('habitoFechaInicio').value = h.fechaInicio;
                 document.getElementById('habitoRecordatorio').checked = h.recordatorio || false;
                 document.getElementById('habitoHoraRecordatorio').value = h.horaRecordatorio || '';
@@ -2151,6 +2179,7 @@
                 document.getElementById('tituloModalHabito').textContent = 'Editar Hábito';
             } else {
                 document.getElementById('tituloModalHabito').textContent = 'Nuevo Hábito';
+                actualizarModoHabito();
             }
             abrirModal('modalHabito');
         }
@@ -2402,17 +2431,29 @@
             if (!confirm(`¿Eliminar la actividad "${a.nombre}"?`)) return;
             appData.actividades = appData.actividades.filter(a => a.id !== id);
             guardarDatos();
-            renderizarTodasActividades();
-            renderizarAgenda();
-            renderizarGantt();
+            renderizarTodo();
+        }
+
+        function eliminarActividadDesdeModal() {
+            const id = parseInt(document.getElementById('actividadId').value);
+            if (!id) return;
+            const antes = appData.actividades.length;
+            eliminarActividad(id);
+            if (appData.actividades.length < antes) cerrarModal('modalActividad');
         }
 
         function eliminarAreaGantt(proyectoId, area) {
             const acts = appData.actividades.filter(a => a.proyectoId === proyectoId && a.fecha && (a.area || 'Sin área') === area);
-            if (acts.length === 0) return;
-            if (!confirm(`¿Eliminar toda el área "${area}" de la carta Gantt? Se borrarán ${acts.length} actividad(es).`)) return;
+            const tieneFicha = !!(appData.ganttPlan && appData.ganttPlan[proyectoId] && (appData.ganttPlan[proyectoId].etapas || []).some(e => e.area === area));
+            if (acts.length === 0 && !tieneFicha) return;
+            const msg = acts.length
+                ? `¿Eliminar toda la etapa "${area}"? Se borrarán ${acts.length} actividad(es).`
+                : `¿Eliminar la etapa "${area}"?`;
+            if (!confirm(msg)) return;
             const idsBorrar = new Set(acts.map(a => a.id));
             appData.actividades = appData.actividades.filter(a => !idsBorrar.has(a.id));
+            if (tieneFicha) appData.ganttPlan[proyectoId].etapas = appData.ganttPlan[proyectoId].etapas.filter(e => e.area !== area);
+            if (ganttEtapaEditando === area) ganttEtapaEditando = null;
             guardarDatos();
             renderizarTodo();
         }
@@ -2626,10 +2667,7 @@
                 appData.actividades.push(actividad);
             }
             guardarDatos();
-            renderizarTodasActividades();
-            renderizarProyectos();
-            renderizarAgenda();
-            renderizarDashboard();
+            renderizarTodo();
         }
 
         function guardarActividadForzado() {
@@ -2876,7 +2914,7 @@
                                     ${ritualBadge}
                                 </div>
                                 <p style="font-size:0.9rem; color:${finalizado ? '#aaa' : ''};">
-                                    🔄 ${frecuenciaTexto} · ⏱️ ${duracionTexto(h.duracion, h.unidad || 'min')} · ⏰ ${h.hora}<br>
+                                    🔄 ${frecuenciaTexto} · ⏱️ ${duracionTexto(h.duracion, h.unidad || 'min')} ${h.hora ? ' · ⏰ ' + h.hora : ' · sin hora'}<br>
                                     📅 Desde: ${new Date(h.fechaInicio + 'T00:00:00').toLocaleDateString('es-CL')}
                                     ${h.fechaFin ? ` hasta ${new Date(h.fechaFin + 'T00:00:00').toLocaleDateString('es-CL')}` : ''}
                                     ${proyecto ? `<br>🎯 ${proyecto.nombre}` : ''}
@@ -3199,7 +3237,7 @@
             });
 
             const bloques = [
-                ...habitosDia.map(h => ({
+                ...habitosDia.filter(h => h.hora).map(h => ({
                     tipo: 'habito', id: h.id, nombre: h.nombre,
                     inicio: getMinutosDelDia(h.hora),
                     duracion: Math.max(5, Math.round(duracionAHoras(h.duracion, h.unidad || 'min') * 60)),
@@ -3294,6 +3332,27 @@
             }).join('');
 
             track.innerHTML = horasHTML + lineaAhoraHTML + bloquesHTML;
+
+            const sinHoraEl = document.getElementById('planifHabitosSinHora');
+            if (sinHoraEl) {
+                const sinHora = appData.habitos.filter(h => {
+                    if (h.modo === 'innegociable' || h.hora) return false;
+                    const inicio = new Date(h.fechaInicio + 'T00:00:00');
+                    if (fechaDia < inicio) return false;
+                    if (h.fechaFin && new Date(h.fechaFin + 'T23:59:59') < fechaDia) return false;
+                    if (h.frecuencia === 'diaria') return true;
+                    if (h.frecuencia === 'semanal') return (h.diasSemana || []).includes(fechaDia.getDay());
+                    if (h.frecuencia === 'mensual') return fechaDia.getDate() === inicio.getDate();
+                    return false;
+                });
+                if (sinHora.length) {
+                    sinHoraEl.style.display = 'block';
+                    sinHoraEl.innerHTML = '⚡ Hábitos sin hora (toca uno para ponerle hora): ' + sinHora.map(h =>
+                        `<button type="button" onclick="abrirModalHabito(${h.id})" style="border:1px solid var(--gold); background:white; color:#8a6500; border-radius:12px; padding:2px 8px; margin:2px; font-size:0.72rem; cursor:pointer;">${String(h.nombre).replace(/</g,'&lt;')}</button>`).join('');
+                } else {
+                    sinHoraEl.style.display = 'none';
+                }
+            }
 
             const aviso = document.getElementById('planifAvisoFuera');
             if (aviso) {
@@ -3721,8 +3780,7 @@
                         nota: e.nota || '',
                         transversal: !!e.transversal
                     }));
-                    // Al reemplazar la carta, el mapa queda exactamente como viene en el archivo (sin etapas viejas)
-                    if (!reemplazar) previas.forEach(p => { if (!plan.etapas.some(e => e.area === p.area)) plan.etapas.push(p); });
+                    previas.forEach(p => { if (!plan.etapas.some(e => e.area === p.area)) plan.etapas.push(p); });
                     etapasImportadas = payload.etapas.length;
                 }
                 if (Array.isArray(payload.dias)) {
@@ -3787,7 +3845,7 @@
             return `<div style="display:flex; align-items:center; gap:10px; padding:8px 10px; margin-bottom:6px; border-radius:8px; background:${atrasada ? '#FFF3E0' : '#fafafa'}; border:1px solid ${atrasada ? '#F9A825' : '#eee'};">
                 <div onclick="toggleCompletada(${a.id})" style="width:18px;height:18px;border-radius:5px;border:2px solid ${color};flex-shrink:0;cursor:pointer;background:${a.completada ? color : 'transparent'};"></div>
                 <div style="flex:1; min-width:0; cursor:pointer;" onclick="abrirModalActividad(${a.id})" title="Editar esta actividad">
-                    <div style="font-size:0.85rem; font-weight:500; ${a.completada ? 'text-decoration:line-through;color:#aaa;' : ''}">${a.nombre}</div>
+                    <div style="font-size:0.85rem; font-weight:500; ${a.completada ? 'text-decoration:line-through;color:#aaa;' : ''}">${escG(a.nombre)}</div>
                     <div style="font-size:0.72rem; color:${atrasada ? '#E65100' : '#888'};">${atrasada ? 'Atrasada · ' : ''}${fechaTexto} · ${horaTexto} · ${a.duracion}${a.unidad || 'h'}</div>
                 </div>
                 <button type="button" title="Eliminar esta actividad" onclick="eliminarActividad(${a.id})" style="border:none; background:none; color:#c62828; font-size:0.95rem; cursor:pointer; flex-shrink:0; padding:4px;">✕</button>
@@ -3867,6 +3925,8 @@
                     <span onclick="toggleAreaGanttBarras('${key}')" style="cursor:pointer; display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">
                         <span class="ganttbar-chevron ${abierto?'open':''}">▸</span><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${area}</span>
                     </span>
+                    <button type="button" title="Agregar una actividad a esta etapa" onclick="nuevaActividadGantt(JSON.parse(this.dataset.area))" data-area="${areaJson}" style="border:none; background:none; color:#4B168E; font-size:0.9rem; cursor:pointer; flex-shrink:0; padding:2px 4px;">＋</button>
+                    <button type="button" title="Cambiar el nombre de esta etapa" onclick="renombrarEtapaGantt(${proyectoId}, JSON.parse(this.dataset.area))" data-area="${areaJson}" style="border:none; background:none; color:#4B168E; font-size:0.8rem; cursor:pointer; flex-shrink:0; padding:2px 4px;">✏️</button>
                     <button type="button" title="Eliminar esta área completa" onclick="eliminarAreaGantt(${proyectoId}, JSON.parse(this.dataset.area))" data-area="${areaJson}" style="border:none; background:none; color:#c62828; font-size:0.85rem; cursor:pointer; flex-shrink:0; padding:2px 4px;">🗑️</button>
                 </div>`;
                 dias.forEach((f, i) => {
@@ -3885,7 +3945,7 @@
                         const idx = dias.indexOf(f);
                         dias.forEach((fx, i) => { html += `<div class="ganttbar-cell" style="grid-row:${r};grid-column:${i+2};"></div>`; });
                         html += `<div class="ganttbar-actlabel" style="grid-row:${r};grid-column:1; display:flex; align-items:center; gap:4px;">
-                            <span onclick="abrirModalActividad(${a.id})" title="Editar esta actividad" style="cursor:pointer; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${a.nombre}</span>
+                            <span onclick="abrirModalActividad(${a.id})" title="Editar esta actividad" style="cursor:pointer; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escG(a.nombre)}</span>
                             <button type="button" title="Eliminar esta actividad" onclick="eliminarActividad(${a.id})" style="border:none; background:none; color:#c62828; font-size:0.8rem; cursor:pointer; flex-shrink:0; padding:2px 4px;">✕</button>
                         </div>`;
                         if (idx >= 0) {
@@ -4050,6 +4110,7 @@
             const pctTotal = total ? Math.round(hechas / total * 100) : 0;
             const meta = proyecto && proyecto.smart && proyecto.smart.especifica ? proyecto.smart.especifica : '';
 
+            ganttActsPorAreaActual = agruparActividadesPorArea(actsProyecto);
             let html = `<div class="gx-resumen">`;
             if (paso) {
                 html += paso.completo
@@ -4067,10 +4128,25 @@
                 });
                 html += `</div>`;
             }
+            if (ganttRitmoEditando) {
+                const nv = plan.niveles || {};
+                html += `<div class="gx-form">
+                    <label class="gx-lbl">Mi ritmo</label>
+                    <textarea id="gxRitmoTxt" class="form-textarea" style="min-height:54px;">${escG(plan.ritmo)}</textarea>
+                    ${Object.keys(GANTT_NIVELES).map(k => `<label class="gx-lbl">${escG(GANTT_NIVELES[k].txt)}</label><textarea id="gxNivel_${k}" class="form-textarea" style="min-height:48px;">${escG(nv[k])}</textarea>`).join('')}
+                    <div class="gx-acciones">
+                        <button type="button" class="btn btn-primary btn-small" onclick="guardarRitmoNivelesGantt()">Guardar</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="ganttRitmoEditando=false; renderizarGantt();">Cancelar</button>
+                    </div></div>`;
+            } else {
+                html += `<div class="gx-acciones"><button type="button" class="gx-link" onclick="ganttRitmoEditando=true; renderizarGantt();">✏️ Editar mi ritmo y hasta dónde llegamos</button></div>`;
+            }
             html += `</div>`;
 
+            html += `<div style="margin:0.6rem 0;"><button type="button" class="btn btn-secondary btn-small" onclick="nuevaEtapaGantt()">＋ Nueva etapa</button></div>`;
             stats.forEach((s, i) => {
                 const m = s.meta || {};
+                const areaAttr = escG(JSON.stringify(s.area));
                 const est = GANTT_ESTADOS_ETAPA[s.estado];
                 const niv = GANTT_NIVELES[m.nivel];
                 const esActual = paso && !paso.completo && paso.etapa.area === s.area;
@@ -4115,10 +4191,97 @@
                     if (listaG(m.noHacer).length) html += `<div class="gx-nohacer"><span class="gx-lbl">🚫 No hacer todavía</span><ul>${listaG(m.noHacer).map(x => `<li>${escG(x)}</li>`).join('')}</ul></div>`;
                     html += `<div class="gx-acciones"><button type="button" class="gx-link" onclick="editarEtapaGantt(${i})">✏️ ${s.meta ? 'Editar' : 'Agregar resultado, entregables y “no hacer todavía”'}</button></div>`;
                 }
+                const listaAct = (ganttActsPorAreaActual[s.area] || []);
+                const abiertaAct = ganttEtapaActsAbiertas.has(s.area);
+                html += `<div class="gx-acciones" style="flex-wrap:wrap;">
+                    <button type="button" class="gx-link" data-area="${areaAttr}" onclick="toggleActsEtapaGantt(JSON.parse(this.dataset.area))">${abiertaAct ? '▾' : '▸'} Actividades (${listaAct.length})</button>
+                    <button type="button" class="gx-link" data-area="${areaAttr}" onclick="nuevaActividadGantt(JSON.parse(this.dataset.area))">＋ Actividad</button>
+                    <button type="button" class="gx-link" data-area="${areaAttr}" onclick="renombrarEtapaGantt(${proyectoId}, JSON.parse(this.dataset.area))">📝 Cambiar nombre</button>
+                    ${i > 0 ? `<button type="button" class="gx-link" onclick="moverEtapaGantt(${proyectoId}, ${i}, -1)">↑</button>` : ''}
+                    ${i < stats.length - 1 ? `<button type="button" class="gx-link" onclick="moverEtapaGantt(${proyectoId}, ${i}, 1)">↓</button>` : ''}
+                    <button type="button" class="gx-link" style="color:#c62828;" data-area="${areaAttr}" onclick="eliminarAreaGantt(${proyectoId}, JSON.parse(this.dataset.area))">🗑️ Eliminar etapa</button>
+                </div>`;
+                if (abiertaAct) {
+                    html += `<div style="margin-top:0.5rem;">${listaAct.length ? listaAct.map(a => filaActividadGanttHTML(a, s.color, false)).join('') : '<p class="gx-mini">Esta etapa aún no tiene actividades con fecha. Usa “＋ Actividad”.</p>'}</div>`;
+                }
                 html += `</div>`;
             });
             cont.innerHTML = html;
         }
+        let ganttRitmoEditando = false;
+        function guardarRitmoNivelesGantt() {
+            const proyectoId = ganttProyectoActualId();
+            if (!proyectoId) return;
+            const plan = ganttPlanDe(proyectoId, true);
+            plan.ritmo = document.getElementById('gxRitmoTxt').value.trim();
+            const niv = {};
+            Object.keys(GANTT_NIVELES).forEach(k => { const v = document.getElementById('gxNivel_' + k).value.trim(); if (v) niv[k] = v; });
+            if (Object.keys(niv).length) plan.niveles = niv; else delete plan.niveles;
+            ganttRitmoEditando = false;
+            guardarDatos();
+            renderizarGantt();
+        }
+        let ganttActsPorAreaActual = {};
+        let ganttEtapaActsAbiertas = new Set();
+        function toggleActsEtapaGantt(area) {
+            if (ganttEtapaActsAbiertas.has(area)) ganttEtapaActsAbiertas.delete(area); else ganttEtapaActsAbiertas.add(area);
+            renderizarGantt();
+        }
+        function fichaEtapaVaciaGantt(area) {
+            return { area, resultado: '', entregables: [], duracion: '', hito: '', noHacer: [], nivel: '', nota: '', transversal: false };
+        }
+        // Se asegura que cada etapa visible tenga su ficha, respetando el orden en que se ven
+        function asegurarFichasEtapasGantt(proyectoId) {
+            const plan = ganttPlanDe(proyectoId, true);
+            const acts = appData.actividades.filter(a => a.proyectoId === proyectoId && a.fecha);
+            statsEtapasGantt(proyectoId, acts).forEach(x => { if (!plan.etapas.some(e => e.area === x.area)) plan.etapas.push(fichaEtapaVaciaGantt(x.area)); });
+            return plan;
+        }
+        function nuevaEtapaGantt() {
+            const proyectoId = ganttProyectoActualId();
+            if (!proyectoId) return;
+            const nombre = (prompt('Nombre de la nueva etapa:') || '').trim();
+            if (!nombre) return;
+            const plan = asegurarFichasEtapasGantt(proyectoId);
+            if (plan.etapas.some(e => e.area === nombre)) { alert('Ya existe una etapa con ese nombre.'); return; }
+            plan.etapas.push(fichaEtapaVaciaGantt(nombre));
+            ganttEtapaActsAbiertas.add(nombre);
+            guardarDatos();
+            renderizarGantt();
+        }
+        function renombrarEtapaGantt(proyectoId, area) {
+            const nuevo = (prompt('Nuevo nombre de la etapa:', area === 'Sin área' ? '' : area) || '').trim();
+            if (!nuevo || nuevo === area) return;
+            const plan = asegurarFichasEtapasGantt(proyectoId);
+            const yaExiste = plan.etapas.some(e => e.area === nuevo);
+            if (yaExiste && !confirm(`Ya existe una etapa llamada "${nuevo}". ¿Quieres juntar ambas en una sola?`)) return;
+            appData.actividades.forEach(a => { if (a.proyectoId === proyectoId && (a.area || 'Sin área') === area) a.area = nuevo; });
+            const ficha = plan.etapas.find(e => e.area === area);
+            if (ficha) { if (yaExiste) plan.etapas = plan.etapas.filter(e => e !== ficha); else ficha.area = nuevo; }
+            if (ganttEtapaEditando === area) ganttEtapaEditando = nuevo;
+            if (ganttEtapaActsAbiertas.has(area)) { ganttEtapaActsAbiertas.delete(area); ganttEtapaActsAbiertas.add(nuevo); }
+            guardarDatos();
+            renderizarTodo();
+        }
+        function moverEtapaGantt(proyectoId, i, dir) {
+            const plan = asegurarFichasEtapasGantt(proyectoId);
+            const j = i + dir;
+            if (i < 0 || j < 0 || i >= plan.etapas.length || j >= plan.etapas.length) return;
+            const t = plan.etapas[i]; plan.etapas[i] = plan.etapas[j]; plan.etapas[j] = t;
+            guardarDatos();
+            renderizarGantt();
+        }
+        function nuevaActividadGantt(area) {
+            const proyectoId = ganttProyectoActualId();
+            abrirModalActividad();
+            actualizarSelectProyectos();
+            if (proyectoId) document.getElementById('actividadProyecto').value = proyectoId;
+            actualizarAreasSugeridas();
+            document.getElementById('actividadArea').value = (area && area !== 'Sin área') ? area : '';
+            const base = (ganttSubvista === 'dia' || ganttSubvista === 'hoy') ? ganttFechaRevision : hoyLocal();
+            document.getElementById('actividadFecha').value = base + 'T09:00';
+        }
+
         function editarEtapaGantt(i) {
             const s = ganttStatsActuales[i];
             if (!s) return;
@@ -4715,6 +4878,7 @@
             const esAtrasado = item => {
                 if (fecha.toDateString() !== ahora.toDateString()) return false;
                 if (item._tipo === 'habito') {
+                    if (!item.hora) return false;
                     const [h, m] = item.hora.split(':');
                     const t = new Date(); t.setHours(parseInt(h), parseInt(m), 0, 0);
                     return t < ahora && !(item.completados && item.completados[fechaStr]);
@@ -4747,7 +4911,7 @@
                                         ${ritualBtn}
                                         ${completadoHoy ? '<span class="badge badge-green">✓</span>' : ''}
                                         <strong>${h.nombre}</strong>
-                                        <span style="color:#666; font-size:0.85rem;">${h.hora} · ${duracionTexto(h.duracion, h.unidad || 'min')}</span>
+                                        <span style="color:#666; font-size:0.85rem;">${h.hora ? h.hora + ' · ' : ''}${duracionTexto(h.duracion, h.unidad || 'min')}</span>
                                     </div>
                                     <button class="btn btn-small ${completadoHoy ? 'btn-secondary' : 'btn-primary'}" onclick="event.stopPropagation(); toggleHabitoCompletado(${h.id}, '${fechaStr}')">
                                         ${completadoHoy ? 'Reabrir' : 'Completar'}
@@ -4827,6 +4991,7 @@
                                 </button>
                                 <button class="btn btn-edit btn-small" onclick="event.stopPropagation(); abrirModalActividad(${a.id})">Editar</button>
                                 <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); duplicarActividad(${a.id})">Duplicar</button>
+                                <button class="btn btn-delete btn-small" onclick="event.stopPropagation(); eliminarActividad(${a.id})">Eliminar</button>
                             </div>
                             <div style="display:flex; gap:0.4rem; margin-top:0.4rem; flex-wrap:wrap; align-items:center;">
                                 <span style="font-size:0.75rem; color:#888;">Mover:</span>
@@ -4916,7 +5081,7 @@
                             return `<div class="week-task-mini ${completado ? 'completada' : ''}" style="border-left-color:${color}; font-size:0.82rem; padding:0.6rem 0.75rem; margin-bottom:0.5rem;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
                                     <div style="flex:1; min-width:0;">
-                                        <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${completado ? 'text-decoration:line-through; color:#999;' : ''}">⚡ ${h.hora} &nbsp;${h.nombre}</div>
+                                        <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${completado ? 'text-decoration:line-through; color:#999;' : ''}">⚡ ${h.hora ? h.hora + ' &nbsp;' : ''}${h.nombre}</div>
                                         <div style="font-size:0.75rem; color:#888; margin-top:2px;">${duracionTexto(h.duracion, h.unidad||'min')}${completado ? ' · ✓ Completado' : ''}</div>
                                     </div>
                                     <div style="display:flex; gap:4px; flex-shrink:0; align-items:center;">
@@ -4986,6 +5151,7 @@
                                 <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0; align-items:flex-end;">
                                     <button style="border:none; background:${a.completada ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); toggleCompletada(${a.id})">${a.completada ? 'Reabrir' : 'Completar'}</button>
                                     <button style="border:1px solid var(--purple); background:white; color:var(--purple); border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); abrirModalActividad(${a.id})">Editar</button>
+                                    <button style="border:1px solid #c62828; background:white; color:#c62828; border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); eliminarActividad(${a.id})">Eliminar</button>
                                     <button style="border:1px solid #ccc; background:white; color:#666; border-radius:5px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" onclick="event.stopPropagation(); duplicarActividad(${a.id})">Duplicar</button>
                                 </div>
                             </div>
@@ -5031,6 +5197,7 @@
                                     <div style="font-size:0.72rem; color:#c62828; margin-top:2px;">📅 Programada: ${new Date(a.fecha).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
                                 </div>
                                 <button style="border:1px solid var(--purple); background:white; color:var(--purple); border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer; flex-shrink:0;" onclick="abrirModalActividad(${a.id})">✏️ Editar</button>
+                                <button style="border:1px solid #c62828; background:white; color:#c62828; border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer; flex-shrink:0;" onclick="event.stopPropagation(); eliminarActividad(${a.id})">🗑️</button>
                             </div>
                             <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
                                 <span style="font-size:0.72rem; color:#666; flex-shrink:0;">Completada el:</span>
@@ -5071,6 +5238,7 @@
                                 <div style="display:flex; gap:3px; flex-shrink:0;">
                                     <button style="border:none; background:#43A047; color:white; border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer;" title="Completar" onclick="toggleCompletada(${a.id})">✓ Listo</button>
                                     <button style="border:1px solid var(--purple); background:white; color:var(--purple); border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer;" onclick="abrirModalActividad(${a.id})">✏️ Editar</button>
+                                    <button style="border:1px solid #c62828; background:white; color:#c62828; border-radius:5px; padding:3px 7px; font-size:0.7rem; cursor:pointer;" onclick="event.stopPropagation(); eliminarActividad(${a.id})">🗑️</button>
                                 </div>
                             </div>
                             <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
@@ -5380,7 +5548,7 @@
                             const color = ritual ? getRitualColor(h.ritualId) : 'var(--gold)';
                             return `<div class="week-task-mini ${completado ? 'completada' : ''}" style="border-left-color:${color}; ${ritual ? 'cursor:pointer;' : 'cursor:default;'}" ${ritual ? `onclick="verRitualModal(${h.ritualId})"` : ''}>
                                 <div style="display:flex; justify-content:space-between; align-items:center; gap:2px;">
-                                    <span style="flex:1; overflow:hidden;">⚡ ${h.hora} ${h.nombre} (${duracionTexto(h.duracion, h.unidad||'min')}) ${completado ? '✓' : ''}</span>
+                                    <span style="flex:1; overflow:hidden;">⚡ ${h.hora ? h.hora + ' ' : ''}${h.nombre} (${duracionTexto(h.duracion, h.unidad||'min')}) ${completado ? '✓' : ''}</span>
                                     <button style="border:none; background:${completado ? 'var(--green)' : 'var(--purple)'}; color:white; border-radius:4px; padding:1px 4px; font-size:0.6rem; cursor:pointer; flex-shrink:0;" onclick="event.stopPropagation(); toggleHabitoCompletado(${h.id},'${fechaDiaStr}')">${completado ? '↩' : '✓'}</button>
                                 </div>
                             </div>`;
@@ -5868,11 +6036,51 @@
             return ['proyectos', 'actividades', 'habitos', 'diario'].reduce((n, k) => n + (Array.isArray(d[k]) ? d[k].length : 0), 0);
         }
 
+        // ---- Recordatorio de respaldo (si pasan 7 días sin respaldar) ----
+        const DIAS_RECORDATORIO_RESPALDO = 7;
+        function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+        function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+        function revisarRecordatorioRespaldo() {
+            const box = document.getElementById('avisoRespaldo');
+            if (!box) return;
+            if (!lsGet('primerUsoSER')) lsSet('primerUsoSER', new Date().toISOString());
+            const btn = document.getElementById('btnRecordatorioRespaldo');
+            const apagado = lsGet('recordatorioRespaldoSER') === 'off';
+            if (btn) btn.textContent = apagado ? '🔔 Activar recordatorio de respaldo' : '🔕 Desactivar recordatorio de respaldo';
+            box.style.display = 'none';
+            if (apagado) return;
+            const hasta = lsGet('recordatorioRespaldoHasta');
+            if (hasta && new Date(hasta) > new Date()) return;
+            const ref = new Date(lsGet('ultimoRespaldoSER') || lsGet('primerUsoSER'));
+            const dias = Math.floor((Date.now() - ref.getTime()) / 86400000);
+            if (dias < DIAS_RECORDATORIO_RESPALDO) return;
+            document.getElementById('avisoRespaldoTxt').innerHTML = lsGet('ultimoRespaldoSER')
+                ? `💾 Hace <strong>${dias} días</strong> que no respaldas tus datos. ¿Quieres descargar una copia ahora?`
+                : `💾 Todavía no has descargado ningún respaldo de tus datos. ¿Quieres hacerlo ahora?`;
+            box.style.display = 'block';
+        }
+        function posponerRecordatorioRespaldo() {
+            lsSet('recordatorioRespaldoHasta', new Date(Date.now() + DIAS_RECORDATORIO_RESPALDO * 86400000).toISOString());
+            revisarRecordatorioRespaldo();
+        }
+        function desactivarRecordatorioRespaldo() {
+            lsSet('recordatorioRespaldoSER', 'off');
+            revisarRecordatorioRespaldo();
+            alert('Listo, no te volveré a recordar el respaldo. Puedes reactivarlo cuando quieras en Configuración → Datos.');
+        }
+        function alternarRecordatorioRespaldo() {
+            if (lsGet('recordatorioRespaldoSER') === 'off') { lsSet('recordatorioRespaldoSER', 'on'); lsSet('recordatorioRespaldoHasta', ''); }
+            else lsSet('recordatorioRespaldoSER', 'off');
+            revisarRecordatorioRespaldo();
+        }
+
         function actualizarTextoUltimoRespaldo() {
             const el = document.getElementById('ultimoRespaldoTxt');
             if (!el) return;
             let f = null;
             try { f = localStorage.getItem('ultimoRespaldoSER'); } catch (e) {}
+            revisarRecordatorioRespaldo();
             el.textContent = f ? 'Último respaldo descargado: ' + new Date(f).toLocaleString('es-CL') : 'Todavía no has descargado ningún respaldo en este aparato.';
         }
 
@@ -6041,6 +6249,7 @@
             renderizarRutinasPoder();
             renderizarCreencias();
             poblarJornada();
+            if (typeof renderizarListaTextosPersonalizados === 'function') renderizarListaTextosPersonalizados();
         }
 
         // ===================== DIARIO =====================
@@ -6572,6 +6781,196 @@
         }
         // ===================== FIN DIARIO =====================
 
+
+        // ===================== TEXTOS PERSONALIZABLES =====================
+        // Guarda { "texto original": "texto de la persona" } en appData.textosPersonalizados (se sincroniza con la cuenta).
+        const _textosAplicados = new WeakMap();   // nodo de texto -> { orig, val }
+        let _textosObserver = null, _textosPendiente = false, _modoEditarTextos = false;
+
+        function mapaTextos() {
+            if (!appData.textosPersonalizados || typeof appData.textosPersonalizados !== 'object') appData.textosPersonalizados = {};
+            return appData.textosPersonalizados;
+        }
+        function _textoOmitido(el) {
+            return !el || !!el.closest('script, style, textarea, input, #editorTextos, #barraEditarTextos, [contenteditable="true"]') || !el.closest('#gantt');
+        }
+        function aplicarTextosPersonalizados() {
+            const mapa = mapaTextos();
+            if (_textosObserver) _textosObserver.disconnect();
+            try {
+                const raiz = document.getElementById('gantt');
+                if (!raiz) return;
+                const w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
+                let n;
+                while ((n = w.nextNode())) {
+                    if (_textoOmitido(n.parentElement)) continue;
+                    const crudo = n.data, t = crudo.trim();
+                    if (!t) continue;
+                    const rec = _textosAplicados.get(n);
+                    const orig = (rec && rec.val === t) ? rec.orig : t;
+                    const destino = Object.prototype.hasOwnProperty.call(mapa, orig) ? mapa[orig] : orig;
+                    if (destino !== t) {
+                        const ini = crudo.match(/^\s*/)[0], fin = crudo.match(/\s*$/)[0];
+                        n.data = ini + destino + fin;
+                        _textosAplicados.set(n, { orig, val: destino });
+                    } else if (rec && rec.val === t) {
+                        _textosAplicados.set(n, { orig, val: t });
+                    }
+                }
+                raiz.querySelectorAll('[placeholder]').forEach(el => {
+                    if (el.dataset.phOrig === undefined) el.dataset.phOrig = el.getAttribute('placeholder');
+                    const o = el.dataset.phOrig;
+                    const d = Object.prototype.hasOwnProperty.call(mapa, o) ? mapa[o] : o;
+                    if (el.getAttribute('placeholder') !== d) el.setAttribute('placeholder', d);
+                });
+            } finally {
+                if (_textosObserver) _textosObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+            }
+        }
+
+        function iniciarTextosPersonalizados() {
+            if (_textosObserver) return;
+            _textosObserver = new MutationObserver(() => {
+                if (_textosPendiente) return;
+                _textosPendiente = true;
+                requestAnimationFrame(() => { _textosPendiente = false; aplicarTextosPersonalizados(); });
+            });
+            aplicarTextosPersonalizados();
+            renderizarListaTextosPersonalizados();
+        }
+
+        function renderizarListaTextosPersonalizados() {
+            const cont = document.getElementById('listaTextosPersonalizados');
+            if (!cont) return;
+            const mapa = mapaTextos();
+            const claves = Object.keys(mapa);
+            if (!claves.length) { cont.innerHTML = '<p style="font-size:0.8rem; color:#aaa;">Todavía no has cambiado ningún texto.</p>'; return; }
+            cont.innerHTML = '<div style="font-size:0.8rem; color:#666; margin-bottom:0.4rem;">Textos que has cambiado:</div>' + claves.map(k => `
+                <div style="display:flex; align-items:center; gap:0.5rem; padding:0.4rem 0.6rem; background:#faf8fd; border-radius:8px; margin-bottom:0.3rem; font-size:0.82rem;">
+                    <div style="flex:1; min-width:0;"><span style="color:#999; text-decoration:line-through;">${escG(k)}</span> → <strong>${escG(mapa[k])}</strong></div>
+                    <button type="button" class="gx-link" data-k="${escG(k)}" onclick="restaurarTextoPersonalizado(this.dataset.k)">↩ Restaurar</button>
+                </div>`).join('');
+        }
+
+        function restaurarTextoPersonalizado(original) {
+            delete mapaTextos()[original];
+            guardarDatos();
+            aplicarTextosPersonalizados();
+            renderizarListaTextosPersonalizados();
+        }
+        function restaurarTodosLosTextos() {
+            if (!Object.keys(mapaTextos()).length) { alert('Todos los textos ya están originales.'); return; }
+            if (!confirm('¿Volver todos los textos a los originales de la app?')) return;
+            appData.textosPersonalizados = {};
+            guardarDatos();
+            aplicarTextosPersonalizados();
+            renderizarListaTextosPersonalizados();
+        }
+
+        // ---- Modo editar: tocar cualquier texto para cambiarlo ----
+        function activarModoEditarTextos() {
+            if (_modoEditarTextos) return;
+            _modoEditarTextos = true;
+            document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+            let barra = document.getElementById('barraEditarTextos');
+            if (!barra) {
+                barra = document.createElement('div');
+                barra.id = 'barraEditarTextos';
+                barra.style.cssText = 'position:fixed; top:0; left:0; right:0; z-index:3000; background:#4B168E; color:#fff; padding:0.6rem 0.8rem; display:flex; gap:0.6rem; align-items:center; font-size:0.85rem; box-shadow:0 2px 10px rgba(0,0,0,0.3);';
+                barra.style.flexWrap = 'wrap';
+                const vistas = [['mapa','🗺️ Mapa'],['carta','📊 Carta'],['hoy','☀️ Hoy'],['dia','📋 Plan'],['cond','🧩 Cond.'],['dec','💡 Decis.']];
+                barra.innerHTML = '<div style="flex:1; min-width:200px;">✏️ <strong>Modo editar textos:</strong> toca cualquier texto de la carta para cambiarlo.</div><button type="button" onclick="desactivarModoEditarTextos()" style="background:#fff; color:#4B168E; border:none; border-radius:16px; padding:5px 14px; font-weight:700; cursor:pointer;">Listo</button><div style="width:100%; display:flex; gap:0.3rem; flex-wrap:wrap;">' + vistas.map(v => `<button type="button" onclick="cambiarSubvistaGantt('${v[0]}')" style="background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.5); border-radius:14px; padding:3px 9px; font-size:0.75rem; cursor:pointer;">${v[1]}</button>`).join('') + '</div>';
+                document.body.appendChild(barra);
+            }
+            barra.style.display = 'flex';
+            document.body.style.paddingTop = '48px';
+            document.body.classList.add('editando-textos');
+            document.addEventListener('click', _clicEditarTexto, true);
+        }
+        function desactivarModoEditarTextos() {
+            _modoEditarTextos = false;
+            document.removeEventListener('click', _clicEditarTexto, true);
+            const barra = document.getElementById('barraEditarTextos'); if (barra) barra.style.display = 'none';
+            document.body.style.paddingTop = '';
+            document.body.classList.remove('editando-textos');
+            cerrarEditorTexto();
+            renderizarListaTextosPersonalizados();
+        }
+        function _nodoTextoEnPunto(x, y, el) {
+            let nodo = null;
+            try {
+                if (document.caretRangeFromPoint) { const r = document.caretRangeFromPoint(x, y); if (r && r.startContainer.nodeType === 3) nodo = r.startContainer; }
+                else if (document.caretPositionFromPoint) { const p = document.caretPositionFromPoint(x, y); if (p && p.offsetNode.nodeType === 3) nodo = p.offsetNode; }
+            } catch (e) {}
+            if (nodo && !el.contains(nodo)) nodo = null;
+            if (!nodo) {
+                const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+                let n; while ((n = w.nextNode())) { if (n.data.trim()) { nodo = n; break; } }
+            }
+            return nodo;
+        }
+        function _clicEditarTexto(e) {
+            if (e.target.closest('#editorTextos, #barraEditarTextos')) return;
+            e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+            const el = e.target;
+            if (!el.closest || !el.closest('#gantt')) return;
+            if (el.matches && el.matches('input[placeholder], textarea[placeholder]')) {
+                const o = el.dataset.phOrig !== undefined ? el.dataset.phOrig : el.getAttribute('placeholder');
+                abrirEditorTexto(o, el.getAttribute('placeholder'));
+                return;
+            }
+            if (_textoOmitido(el)) return;
+            const nodo = _nodoTextoEnPunto(e.clientX, e.clientY, el);
+            if (!nodo || !nodo.data.trim()) return;
+            const actual = nodo.data.trim();
+            const rec = _textosAplicados.get(nodo);
+            const orig = (rec && rec.val === actual) ? rec.orig : actual;
+            abrirEditorTexto(orig, actual);
+        }
+        let _editorOriginal = null;
+        function abrirEditorTexto(original, actual) {
+            _editorOriginal = original;
+            let ed = document.getElementById('editorTextos');
+            if (!ed) {
+                ed = document.createElement('div');
+                ed.id = 'editorTextos';
+                ed.style.cssText = 'position:fixed; inset:0; z-index:3100; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; padding:16px;';
+                ed.innerHTML = `<div style="background:#fff; border-radius:14px; padding:1rem; width:100%; max-width:440px;">
+                    <div style="font-weight:700; color:#4B168E; margin-bottom:0.4rem;">Cambiar este texto</div>
+                    <div id="editorTextoOriginal" style="font-size:0.75rem; color:#999; margin-bottom:0.5rem;"></div>
+                    <textarea id="editorTextoNuevo" class="form-textarea" style="min-height:70px; width:100%;"></textarea>
+                    <div style="display:flex; gap:0.5rem; margin-top:0.7rem; flex-wrap:wrap;">
+                        <button type="button" class="btn btn-primary btn-small" onclick="guardarEditorTexto()">Guardar</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="restaurarEditorTexto()">↩ Original</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="cerrarEditorTexto()">Cancelar</button>
+                    </div></div>`;
+                document.body.appendChild(ed);
+            }
+            document.getElementById('editorTextoOriginal').textContent = 'Original: ' + original;
+            document.getElementById('editorTextoNuevo').value = actual;
+            ed.style.display = 'flex';
+            setTimeout(() => { const t = document.getElementById('editorTextoNuevo'); if (t) { t.focus(); t.select(); } }, 50);
+        }
+        function cerrarEditorTexto() {
+            const ed = document.getElementById('editorTextos'); if (ed) ed.style.display = 'none';
+        }
+        function guardarEditorTexto() {
+            if (_editorOriginal === null) return;
+            const nuevo = document.getElementById('editorTextoNuevo').value.replace(/\s+/g, ' ').trim();
+            const mapa = mapaTextos();
+            if (!nuevo || nuevo === _editorOriginal) delete mapa[_editorOriginal]; else mapa[_editorOriginal] = nuevo;
+            guardarDatos();
+            cerrarEditorTexto();
+            aplicarTextosPersonalizados();
+        }
+        function restaurarEditorTexto() {
+            if (_editorOriginal === null) return;
+            delete mapaTextos()[_editorOriginal];
+            guardarDatos();
+            cerrarEditorTexto();
+            aplicarTextosPersonalizados();
+        }
+
         // SUPABASE
         const SUPABASE_URL = 'https://fvyczwosjpzlsqoliosv.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_efUqhEN1v2QoeF3XDft2bw_h2xkUw3U';
@@ -6612,21 +7011,8 @@
             msg.style.color = '#666';
             msg.textContent = 'Iniciando sesión...';
             const { error } = await sb.auth.signInWithPassword({ email, password });
-            if (error) { msg.style.color = 'var(--red)'; msg.textContent = error.message; return; }
+            if (error) { msg.style.color = 'var(--red)'; msg.textContent = /invalid login|credentials/i.test(error.message) ? 'Correo o contraseña incorrectos, o tu cuenta aún no fue activada.' : error.message; return; }
             cerrarModalAuth();
-        }
-
-        async function registrarse() {
-            const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('authPassword').value;
-            const msg = document.getElementById('authMensaje');
-            if (password.length < 6) { msg.style.color = 'var(--red)'; msg.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
-            msg.style.color = '#666';
-            msg.textContent = 'Creando cuenta...';
-            const { error } = await sb.auth.signUp({ email, password });
-            if (error) { msg.style.color = 'var(--red)'; msg.textContent = error.message; return; }
-            msg.style.color = 'var(--green)';
-            msg.textContent = 'Cuenta creada. Revisa tu correo para confirmar.';
         }
 
         async function cerrarSesion() {
